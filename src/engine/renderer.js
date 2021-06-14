@@ -1,11 +1,10 @@
 import { WebGLRenderer } from 'three';
 import { ScenesList } from './scenes-list';
+import { Size } from './constants';
 
-const scenes = ScenesList();
+export const scenes = ScenesList();
 
-const activeRenders = {};
-
-class ActiveRender {
+export class ActiveRender {
   constructor({canvas, sceneName, height, width, options, useDefaultRendering=true}) {
     if(typeof(options) === 'object') {
       if(options.canvas) {
@@ -17,7 +16,7 @@ class ActiveRender {
       alpha: true,
       canvas
     });
-    this.renderer.setSize(width || Size.GameScreen.width, height || Size.GameScreen.height);
+    this.renderer.setSize(width || Size.width, height || Size.height);
     this.scene = new scenes[sceneName](canvas, this.renderer);
     this.scene.start();
     const animate = time => {
@@ -29,10 +28,4 @@ class ActiveRender {
     }
     this.renderer.setAnimationLoop(animate);
   }
-}
-
-export const manifest = {
-  init: (name, args) => {
-    activeRenders[name] = new ActiveRender(args);
-  },
 }
