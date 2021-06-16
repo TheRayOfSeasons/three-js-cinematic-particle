@@ -14,6 +14,6 @@ export class HeroScene extends InteractiveScene {
   defaultCamera = 'DefaultCamera';
 
   onSceneAwake() {
-    this.currentCamera.position.z = 20;
+    this.currentCamera.position.z = 10;
   }
 }

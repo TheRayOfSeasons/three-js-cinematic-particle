@@ -11,8 +11,10 @@ import {
   Plane,
   PlaneHelper,
   Points,
+  PointsMaterial,
   Raycaster,
   ShaderMaterial,
+  TextureLoader,
   Vector2,
   Vector3
 } from 'three';
@@ -32,43 +34,60 @@ function getDistance(x1, y1, x2, y2) {
  * @param {Array} array
  * @param {Number} currentIndex
  */
-function loopIncrementIndex(array, currentIndex, defaultIndex=0) {
+function loopIncrementIndex(array, currentIndex, defaultIndex) {
   const newIndex = currentIndex + 1;
-  return array[newIndex] ? newIndex : defaultIndex;
+  return currentIndex < array.length - 1 ? newIndex : defaultIndex;
 }
 
-const waypoints = [
-  new Vector3(7, 7, 0),
-  new Vector3(6.99, 6.99, 0),
-  new Vector3(-7, -7, 0),
-  new Vector3(2, -2, 0),
-  new Vector3(-2, 2, 0)
-];
-
-const branchedWaypoints = {
+const waypoints = {
   branches: [
     {
       startIndex: 0,
       destinations: [
-        new Vector3(7, 7, 0),
-        new Vector3(6.99, 6.99, 0),
-        new Vector3(-7, -7, 0),
+        new Vector3(15, 7, 0),
+        new Vector3(-7, -10, 0),
+      ],
+    },
+    {
+      startIndex: 0,
+      destinations: [
+        new Vector3(15, 7, 0),
+        new Vector3(10, -10, 0),
       ],
     },
     {
       startIndex: 0,
       destinations: [
         new Vector3(7, 7, 0),
-        new Vector3(6.99, 6.99, 0),
-        new Vector3(2, -2, 0),
+        new Vector3(-15, 4, 0)
       ],
     },
     {
       startIndex: 0,
       destinations: [
-        new Vector3(7, 7, 0),
-        new Vector3(6.99, 6.99, 0),
-        new Vector3(-2, 2, 0)
+        new Vector3(7, 4, 3),
+        new Vector3(-10, 1, 3)
+      ],
+    },
+    {
+      startIndex: 0,
+      destinations: [
+        new Vector3(11, 7, -3),
+        new Vector3(8, -10, -3),
+      ],
+    },
+    {
+      startIndex: 0,
+      destinations: [
+        new Vector3(9, 7, -1),
+        new Vector3(-3, -10, -1),
+      ],
+    },
+    {
+      startIndex: 0,
+      destinations: [
+        new Vector3(7, 7, -2),
+        new Vector3(1, -10, -2),
       ],
     },
   ]
@@ -76,8 +95,8 @@ const branchedWaypoints = {
 
 class Dots extends MonoBehaviour {
   parameters = {
-    dotCount: 10000,
-    dotSize: 0.02,
+    dotCount: 1000,
+    dotSize: 20,
     area: 100
   }
 
@@ -97,8 +116,8 @@ class Dots extends MonoBehaviour {
       const y = i3 + 1;
       const z = i3 + 2;
 
-      const branchedWaypointIndex = i % branchedWaypoints.branches.length;
-      const waypointBranch = branchedWaypoints.branches[branchedWaypointIndex];
+      const branchedWaypointIndex = i % waypoints.branches.length;
+      const waypointBranch = waypoints.branches[branchedWaypointIndex];
       const startIndex = waypointBranch.startIndex;
       const destinations = waypointBranch.destinations;
 
@@ -109,9 +128,9 @@ class Dots extends MonoBehaviour {
       currentDestinations[x] = destinations[startIndex].x;
       currentDestinations[y] = destinations[startIndex].y;
       currentDestinations[z] = destinations[startIndex].z;
-      colors[x] = 1;
-      colors[y] = 1;
-      colors[z] = 1;
+      colors[x] = Math.random();
+      colors[y] = Math.random();
+      colors[z] = Math.random();
       sizes[i] = 0.2;
       waypointIndices[i] = startIndex;
     }
@@ -123,11 +142,13 @@ class Dots extends MonoBehaviour {
     this.geometry.setAttribute('waypointBranch', new BufferAttribute(waypointBranches, 1));
     this.geometry.setAttribute('currentDestination', new BufferAttribute(currentDestinations, 3));
 
+    const textureLoader = new TextureLoader();
+    const particleImg = textureLoader.load('/circle-2.png');
     this.material = new ShaderMaterial({
       uniforms: {
         color: { value: new Color( 0xffffff ) },
         // for further experimentation:
-        // pointTexture: { value: this.particleImg }
+        pointTexture: { value: particleImg }
       },
       vertexShader: `
         attribute float size;
@@ -143,20 +164,27 @@ class Dots extends MonoBehaviour {
       `,
       fragmentShader: `
         uniform vec3 color;
-        // uniform sampler2D pointTexture;
+        uniform sampler2D pointTexture;
 
         varying vec3 vColor;
 
         void main() {
           gl_FragColor = vec4(color * vColor, 1.0);
-          // gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
+          gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
         }
       `,
       blending: AdditiveBlending,
       depthTest: false,
       transparent: true
+    });
+    this.altMaterial = new PointsMaterial({
+      size: 0.3,
+      map: particleImg,
+      sizeAttenuation: true,
+      transparent: true,
+      color: 0x60afc1
     })
-    this.points = new Points(this.geometry, this.material);
+    this.points = new Points(this.geometry, this.altMaterial);
     this.group.add(this.points);
   }
 
@@ -203,12 +231,14 @@ class MouseOverDotAnimation extends MonoBehaviour {
       this.intersectHelper = new Mesh(this.intersectHelperGeometry, this.intersectHelperMaterial);
       this.group.add(this.intersectHelper);
 
-      for(const waypoint of waypoints) {
-        const waypointMeshGeometry = new BoxGeometry(1, 1, 1);
-        const waypointMeshMaterial = new MeshNormalMaterial();
-        const waypointMesh = new Mesh(waypointMeshGeometry, waypointMeshMaterial);
-        this.group.add(waypointMesh);
-        waypointMesh.position.set(waypoint.x, waypoint.y, waypoint.z);
+      for(const { destinations } of waypoints.branches) {
+        for(const destination of destinations) {
+          const waypointMeshGeometry = new BoxGeometry(1, 1, 1);
+          const waypointMeshMaterial = new MeshNormalMaterial();
+          const waypointMesh = new Mesh(waypointMeshGeometry, waypointMeshMaterial);
+          this.group.add(waypointMesh);
+          waypointMesh.position.set(destination.x, destination.y, destination.z);
+        }
       }
 
       const planeHelper = new PlaneHelper(this.raycastPlane, 0xffff00);
@@ -292,19 +322,24 @@ class MouseOverDotAnimation extends MonoBehaviour {
           if(lerpDistance < 0.01) {
             const waypointIndex = this.dots.points.geometry.attributes.waypointIndex.array[i];
             const waypointBranch = this.dots.points.geometry.attributes.waypointBranch.array[i];
-            const destinations = branchedWaypoints.branches[waypointBranch].destinations;
-            const newIndex = loopIncrementIndex(destinations, waypointIndex, 1);
+            const destinations = waypoints.branches[waypointBranch].destinations;
+            const newIndex = loopIncrementIndex(destinations, waypointIndex, 0);
 
             const newWaypoint = destinations[newIndex];
             this.dots.points.geometry.attributes.waypointIndex.array[i] = newIndex;
-            if(waypointIndex == destinations.length - 1) {
-              currentX = waypoints[0].x;
-              currentY = waypoints[0].y;
+            if(newIndex == 0) {
+              currentX = destinations[0].x;
+              currentY = destinations[0].y;
+              this.dots.points.geometry.attributes.waypointIndex.array[i] = 0;
             }
             else {
               this.dots.points.geometry.attributes.currentDestination.array[x] = newWaypoint.x;
               this.dots.points.geometry.attributes.currentDestination.array[y] = newWaypoint.y;
               this.dots.points.geometry.attributes.currentDestination.array[z] = newWaypoint.z;
+            }
+            if(i == 2) {
+              // console.log('new index:', newIndex);
+              // console.log('applied index:', this.dots.points.geometry.attributes.waypointIndex.array[i]);
             }
           }
           else {
@@ -333,6 +368,7 @@ class MouseOverDotAnimation extends MonoBehaviour {
       this.dots.points.geometry.attributes.position.array[z] = currentZ;
     }
     this.dots.points.geometry.attributes.position.needsUpdate = true;
+    this.dots.points.geometry.attributes.currentDestination.needsUpdate = true;
     this.dots.points.geometry.attributes.waypointIndex.needsUpdate = true;
 
     if(debug) {
