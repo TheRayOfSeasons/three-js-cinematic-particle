@@ -28,6 +28,34 @@ function getDistance(x1, y1, x2, y2) {
   return Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2));
 }
 
+
+console.log(new Vector3(1, 1, 2).multiplyScalar(3));
+/**
+ *
+ * @param {Vector3} p0
+ * @param {Vector3} p1
+ * @param {Vector3} p2
+ * @param {Vector3} p3
+ * @param {Number} t
+ */
+function bezierLerp(p0, p1, p2, p3, t) {
+  const r = 1.0 - t;
+  const f0 = r * r * r;
+  const f1 = r * r * t * 3;
+  const f2 = r * t * t * 3;
+  const f3 = t * t * t;
+
+  const inter0 = p0.multiplyScalar(f0);
+  const inter1 = p1.multiplyScalar(f1);
+  const inter2 = p2.multiplyScalar(f2);
+  const inter3 = p3.multiplyScalar(f3);
+
+  return inter0
+    .add(inter1)
+    .add(inter2)
+    .add(inter3);
+}
+
 const waypoints = {
   branches: [
     {
@@ -84,7 +112,7 @@ const waypoints = {
 class Dots extends MonoBehaviour {
   parameters = {
     dotCount: 10000,
-    dotSize: 20,
+    dotSize: 10,
     area: 100
   }
 
@@ -127,7 +155,7 @@ class Dots extends MonoBehaviour {
       colors[x] = color.r;
       colors[y] = color.g;
       colors[z] = color.b;
-      sizes[i] = 0.5;
+      sizes[i] = 0.25;
       waypointIndices[i] = startIndex;
     }
 
@@ -143,7 +171,6 @@ class Dots extends MonoBehaviour {
     this.material = new ShaderMaterial({
       uniforms: {
         color: { value: new Color( 0xffffff ) },
-        // for further experimentation:
         pointTexture: { value: particleImg }
       },
       vertexShader: `
@@ -293,7 +320,7 @@ class MouseOverDotAnimation extends MonoBehaviour {
         // this defines the movements of the points outside the affected area of the mouse position
 
         if(this.parameters.keepDynamicWhenIdle) {
-
+          const waypointBranch = this.dots.points.geometry.attributes.waypointBranch.array[i];
           const interpolationVector = new Vector3(
             currentX,
             currentY,
@@ -305,44 +332,27 @@ class MouseOverDotAnimation extends MonoBehaviour {
             this.dots.points.geometry.attributes.currentDestination.array[z]
           );
           const preDistance = interpolationVector.distanceTo(destination);
-          interpolationVector.lerp(
+          const newInterpolationVector = bezierLerp(
+            waypoints.branches[waypointBranch].startDestination,
+            new Vector3(0, 0, 0),
+            new Vector3(-10, -3, 0),
             destination,
             Math.atan2(0.05, preDistance)
-          );
+          )
+          // interpolationVector.lerp(
+          //   destination,
+          //   Math.atan2(0.05, preDistance)
+          // );
 
-          const lerpDistance = interpolationVector.distanceTo(new Vector3(currentX, currentY, currentZ));
-          // if(i == 0) {
-          //   console.log('lerpDistance:', lerpDistance);
-          // }
+          const lerpDistance = newInterpolationVector.distanceTo(new Vector3(currentX, currentY, currentZ));
           if(lerpDistance <= 0.01) {
-            const waypointBranch = this.dots.points.geometry.attributes.waypointBranch.array[i];
             currentX = waypoints.branches[waypointBranch].startDestination.x;
             currentY = waypoints.branches[waypointBranch].startDestination.y;
-            // this.dots.points.geometry.attributes.currentDestination.array[x] = newWaypoint.x;
-            // this.dots.points.geometry.attributes.currentDestination.array[y] = newWaypoint.y;
-            // this.dots.points.geometry.attributes.currentDestination.array[z] = newWaypoint.z;
-            // if(i == 2) {
-            //   // console.log('new index:', newIndex);
-            //   // console.log('applied index:', this.dots.points.geometry.attributes.waypointIndex.array[i]);
-            // }
           }
           else {
-            currentX = interpolationVector.x + ((Math.random() - 0.5) * 0.1);
-            currentY = interpolationVector.y + ((Math.random() - 0.5) * 0.1);
+            currentX = newInterpolationVector.x + ((Math.random() - 0.5) * 0.1);
+            currentY = newInterpolationVector.y + ((Math.random() - 0.5) * 0.1);
           }
-
-          // const t = Math.atan2(initialX - interpolationVector.x, initialY - interpolationVector.y);
-          // const t = Math.atan2(distanceY, distanceX);
-
-          // experimental 1
-          // const t = Math.atan2(currentX, currentY);
-          // experimental 2
-          // const t = Math.atan2(currentX * Math.sin(distanceX), currentY * Math.sin(distanceY));
-          // experimental 3
-          // const t = Math.atan2(currentX * Math.tan(distanceX), currentY * Math.tan(distanceY));
-
-          // currentX -= Math.sin(elapsedTime + t) * 0.5;
-          // currentY -= Math.cos(elapsedTime + t) * 0.5;
         }
       }
 
