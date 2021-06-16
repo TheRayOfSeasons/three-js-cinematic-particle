@@ -45,6 +45,35 @@ const waypoints = [
   new Vector3(-2, 2, 0)
 ];
 
+const branchedWaypoints = {
+  branches: [
+    {
+      startIndex: 0,
+      destinations: [
+        new Vector3(7, 7, 0),
+        new Vector3(6.99, 6.99, 0),
+        new Vector3(-7, -7, 0),
+      ],
+    },
+    {
+      startIndex: 0,
+      destinations: [
+        new Vector3(7, 7, 0),
+        new Vector3(6.99, 6.99, 0),
+        new Vector3(2, -2, 0),
+      ],
+    },
+    {
+      startIndex: 0,
+      destinations: [
+        new Vector3(7, 7, 0),
+        new Vector3(6.99, 6.99, 0),
+        new Vector3(-2, 2, 0)
+      ],
+    },
+  ]
+}
+
 class Dots extends MonoBehaviour {
   parameters = {
     dotCount: 10000,
@@ -60,40 +89,39 @@ class Dots extends MonoBehaviour {
     const colors = new Float32Array(this.parameters.dotCount * 3);
     const sizes = new Float32Array(this.parameters.dotCount);
     const waypointIndices = new Float32Array(this.parameters.dotCount);
-    const waypointIndexStart = 2;
-    const currentDestinations = new Float32Array(this.parameters.dotCount * 3); 
-    for(let i = 0, currentWaypointIndex = waypointIndexStart; i < this.parameters.dotCount; i++) {
+    const waypointBranches = new Float32Array(this.parameters.dotCount);
+    const currentDestinations = new Float32Array(this.parameters.dotCount * 3);
+    for(let i = 0; i < this.parameters.dotCount; i++) {
       const i3 = i * 3;
       const x = i3;
       const y = i3 + 1;
       const z = i3 + 2;
 
-      positions[x] = waypoints[0].x;
-      positions[y] = waypoints[0].y;
-      positions[z] = waypoints[0].z;
-      currentDestinations[x] = waypoints[currentWaypointIndex].x;
-      currentDestinations[y] = waypoints[currentWaypointIndex].y;
-      currentDestinations[z] = waypoints[currentWaypointIndex].z;
+      const branchedWaypointIndex = i % branchedWaypoints.branches.length;
+      const waypointBranch = branchedWaypoints.branches[branchedWaypointIndex];
+      const startIndex = waypointBranch.startIndex;
+      const destinations = waypointBranch.destinations;
+
+      waypointBranches[i] = branchedWaypointIndex;
+      positions[x] = destinations[startIndex].x;
+      positions[y] = destinations[startIndex].y;
+      positions[z] = destinations[startIndex].z;
+      currentDestinations[x] = destinations[startIndex].x;
+      currentDestinations[y] = destinations[startIndex].y;
+      currentDestinations[z] = destinations[startIndex].z;
       colors[x] = 1;
       colors[y] = 1;
       colors[z] = 1;
       sizes[i] = 0.2;
-      waypointIndices[i] = currentWaypointIndex;
-      if(currentWaypointIndex < waypoints.length - 1) {
-        currentWaypointIndex++;
-      }
-      else {
-        currentWaypointIndex = waypointIndexStart;
-      }
+      waypointIndices[i] = startIndex;
     }
-    console.log(waypointIndices);
 
     this.geometry.setAttribute('position', new BufferAttribute(positions, 3));
     this.geometry.setAttribute('customColor', new BufferAttribute(colors, 3));
     this.geometry.setAttribute('size', new BufferAttribute(sizes, 1));
     this.geometry.setAttribute('waypointIndex', new BufferAttribute(waypointIndices, 1));
+    this.geometry.setAttribute('waypointBranch', new BufferAttribute(waypointBranches, 1));
     this.geometry.setAttribute('currentDestination', new BufferAttribute(currentDestinations, 3));
-    // lerp target as attribute
 
     this.material = new ShaderMaterial({
       uniforms: {
@@ -243,7 +271,6 @@ class MouseOverDotAnimation extends MonoBehaviour {
         // this defines the movements of the points outside the affected area of the mouse position
 
         if(this.parameters.keepDynamicWhenIdle) {
-          const waypointIndex = this.dots.points.geometry.attributes.waypointIndex.array[i];
 
           const interpolationVector = new Vector3(
             currentX,
@@ -263,16 +290,22 @@ class MouseOverDotAnimation extends MonoBehaviour {
 
           const lerpDistance = interpolationVector.distanceTo(new Vector3(currentX, currentY, currentZ));
           if(lerpDistance < 0.01) {
-            // const newIndex = loopIncrementIndex(waypoints, waypointIndex, 0);
+            const waypointIndex = this.dots.points.geometry.attributes.waypointIndex.array[i];
+            const waypointBranch = this.dots.points.geometry.attributes.waypointBranch.array[i];
+            const destinations = branchedWaypoints.branches[waypointBranch].destinations;
+            const newIndex = loopIncrementIndex(destinations, waypointIndex, 1);
 
-            // const newWaypoint = waypoints[newIndex];
-            // this.dots.points.geometry.attributes.waypointIndex.array[i] = newIndex;
-            // this.dots.points.geometry.attributes.currentDestination.array[x] = newWaypoint.x;
-            // this.dots.points.geometry.attributes.currentDestination.array[y] = newWaypoint.y;
-            // this.dots.points.geometry.attributes.currentDestination.array[z] = newWaypoint.z;
-
-            currentX = waypoints[0].x;
-            currentY = waypoints[0].y;
+            const newWaypoint = destinations[newIndex];
+            this.dots.points.geometry.attributes.waypointIndex.array[i] = newIndex;
+            if(waypointIndex == destinations.length - 1) {
+              currentX = waypoints[0].x;
+              currentY = waypoints[0].y;
+            }
+            else {
+              this.dots.points.geometry.attributes.currentDestination.array[x] = newWaypoint.x;
+              this.dots.points.geometry.attributes.currentDestination.array[y] = newWaypoint.y;
+              this.dots.points.geometry.attributes.currentDestination.array[z] = newWaypoint.z;
+            }
           }
           else {
             currentX = interpolationVector.x + ((Math.random() - 0.5) * 0.1);
