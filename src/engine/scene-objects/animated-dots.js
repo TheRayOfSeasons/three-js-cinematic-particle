@@ -44,58 +44,44 @@ const waypoints = {
     {
       startIndex: 0,
       color: new Color('#e6875c'),
-      destinations: [
-        new Vector3(15, 10, 0),
-        new Vector3(-7, -10, 0),
-      ],
+      startDestination: new Vector3(15, 10, 0),
+      targetDestination: new Vector3(-7, -10, 0),
     },
     {
       startIndex: 0,
       color: new Color('#55bddd'),
-      destinations: [
-        new Vector3(15, 10, 0),
-        new Vector3(10, -10, 0),
-      ],
+      startDestination: new Vector3(15, 10, 0),
+      targetDestination: new Vector3(10, -10, 0),
     },
     {
       startIndex: 0,
       color: new Color('#e47744'),
-      destinations: [
-        new Vector3(7, 10, 0),
-        new Vector3(-15, 4, 0)
-      ],
+      startDestination: new Vector3(7, 10, 0),
+      targetDestination: new Vector3(-17, 4, 0)
     },
     {
       startIndex: 0,
       color: new Color('#21afda'),
-      destinations: [
-        new Vector3(7, 6, 3),
-        new Vector3(-10, 1, 3)
-      ],
+      startDestination: new Vector3(7, 6, 3),
+      targetDestination: new Vector3(-12, 1, 3)
     },
     {
       startIndex: 0,
       color: new Color('#156c86'),
-      destinations: [
-        new Vector3(11, 10, -3),
-        new Vector3(8, -10, -3),
-      ],
+      startDestination: new Vector3(11, 10, -3),
+      targetDestination: new Vector3(8, -10, -3),
     },
     {
       startIndex: 0,
       color: new Color('#da5b21'),
-      destinations: [
-        new Vector3(9, 10, -1),
-        new Vector3(-3, -10, -1),
-      ],
+      startDestination: new Vector3(9, 10, -1),
+      targetDestination: new Vector3(-3, -10, -1),
     },
     {
       startIndex: 0,
       color: new Color('#187a97'),
-      destinations: [
-        new Vector3(7, 10, -2),
-        new Vector3(1, -10, -2),
-      ],
+      startDestination: new Vector3(7, 10, -2),
+      targetDestination: new Vector3(1, -10, -2),
     },
   ]
 }
@@ -117,6 +103,7 @@ class Dots extends MonoBehaviour {
     const waypointIndices = new Float32Array(this.parameters.dotCount);
     const waypointBranches = new Float32Array(this.parameters.dotCount);
     const currentDestinations = new Float32Array(this.parameters.dotCount * 3);
+    const batchCount = this.parameters.dotCount / waypoints.branches.length;
     for(let i = 0; i < this.parameters.dotCount; i++) {
       const i3 = i * 3;
       const x = i3;
@@ -126,15 +113,20 @@ class Dots extends MonoBehaviour {
       const branchedWaypointIndex = i % waypoints.branches.length;
       const waypointBranch = waypoints.branches[branchedWaypointIndex];
       const startIndex = waypointBranch.startIndex;
-      const destinations = waypointBranch.destinations;
+
+      const startPosition = new Vector3().copy(waypointBranch.startDestination);
+      startPosition.lerp(
+        waypointBranch.targetDestination,
+        ((i + 1) / waypoints.branches.length) / batchCount
+      );
 
       waypointBranches[i] = branchedWaypointIndex;
-      positions[x] = destinations[startIndex].x;
-      positions[y] = destinations[startIndex].y;
-      positions[z] = destinations[startIndex].z;
-      currentDestinations[x] = destinations[startIndex].x;
-      currentDestinations[y] = destinations[startIndex].y;
-      currentDestinations[z] = destinations[startIndex].z;
+      positions[x] = startPosition.x;
+      positions[y] = startPosition.y;
+      positions[z] = startPosition.z;
+      currentDestinations[x] = waypointBranch.targetDestination.x;
+      currentDestinations[y] = waypointBranch.targetDestination.y;
+      currentDestinations[z] = waypointBranch.targetDestination.z;
 
       const color = waypointBranch.color;
       colors[x] = color.r;
@@ -239,14 +231,12 @@ class MouseOverDotAnimation extends MonoBehaviour {
       this.intersectHelper = new Mesh(this.intersectHelperGeometry, this.intersectHelperMaterial);
       this.group.add(this.intersectHelper);
 
-      for(const { destinations } of waypoints.branches) {
-        for(const destination of destinations) {
-          const waypointMeshGeometry = new BoxGeometry(1, 1, 1);
-          const waypointMeshMaterial = new MeshNormalMaterial();
-          const waypointMesh = new Mesh(waypointMeshGeometry, waypointMeshMaterial);
-          this.group.add(waypointMesh);
-          waypointMesh.position.set(destination.x, destination.y, destination.z);
-        }
+      for(const { targetDestination } of waypoints.branches) {
+        const waypointMeshGeometry = new BoxGeometry(1, 1, 1);
+        const waypointMeshMaterial = new MeshNormalMaterial();
+        const waypointMesh = new Mesh(waypointMeshGeometry, waypointMeshMaterial);
+        this.group.add(waypointMesh);
+        waypointMesh.position.set(targetDestination .x, targetDestination .y, targetDestination .z);
       }
 
       const planeHelper = new PlaneHelper(this.raycastPlane, 0xffff00);
@@ -327,28 +317,20 @@ class MouseOverDotAnimation extends MonoBehaviour {
           );
 
           const lerpDistance = interpolationVector.distanceTo(new Vector3(currentX, currentY, currentZ));
-          if(lerpDistance < 0.01) {
-            const waypointIndex = this.dots.points.geometry.attributes.waypointIndex.array[i];
+          // if(i == 0) {
+          //   console.log('lerpDistance:', lerpDistance);
+          // }
+          if(lerpDistance <= 0.01) {
             const waypointBranch = this.dots.points.geometry.attributes.waypointBranch.array[i];
-            const destinations = waypoints.branches[waypointBranch].destinations;
-            const newIndex = loopIncrementIndex(destinations, waypointIndex, 0);
-
-            const newWaypoint = destinations[newIndex];
-            this.dots.points.geometry.attributes.waypointIndex.array[i] = newIndex;
-            if(newIndex == 0) {
-              currentX = destinations[0].x;
-              currentY = destinations[0].y;
-              this.dots.points.geometry.attributes.waypointIndex.array[i] = 0;
-            }
-            else {
-              this.dots.points.geometry.attributes.currentDestination.array[x] = newWaypoint.x;
-              this.dots.points.geometry.attributes.currentDestination.array[y] = newWaypoint.y;
-              this.dots.points.geometry.attributes.currentDestination.array[z] = newWaypoint.z;
-            }
-            if(i == 2) {
-              // console.log('new index:', newIndex);
-              // console.log('applied index:', this.dots.points.geometry.attributes.waypointIndex.array[i]);
-            }
+            currentX = waypoints.branches[waypointBranch].startDestination.x;
+            currentY = waypoints.branches[waypointBranch].startDestination.y;
+            // this.dots.points.geometry.attributes.currentDestination.array[x] = newWaypoint.x;
+            // this.dots.points.geometry.attributes.currentDestination.array[y] = newWaypoint.y;
+            // this.dots.points.geometry.attributes.currentDestination.array[z] = newWaypoint.z;
+            // if(i == 2) {
+            //   // console.log('new index:', newIndex);
+            //   // console.log('applied index:', this.dots.points.geometry.attributes.waypointIndex.array[i]);
+            // }
           }
           else {
             currentX = interpolationVector.x + ((Math.random() - 0.5) * 0.1);
