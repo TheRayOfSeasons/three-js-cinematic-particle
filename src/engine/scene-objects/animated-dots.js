@@ -83,6 +83,12 @@ const waypoints = {
       startDestination: new Vector3(7, 10, -2),
       targetDestination: new Vector3(1, -10, -2),
     },
+    {
+      startIndex: 0,
+      color: new Color('#187a97'),
+      startDestination: new Vector3(6.5, 10, -2),
+      targetDestination: new Vector3(0.5, -10, -2),
+    },
   ]
 }
 
