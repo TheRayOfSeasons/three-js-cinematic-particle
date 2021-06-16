@@ -43,50 +43,57 @@ const waypoints = {
   branches: [
     {
       startIndex: 0,
+      color: new Color('#e6875c'),
       destinations: [
-        new Vector3(15, 7, 0),
+        new Vector3(15, 10, 0),
         new Vector3(-7, -10, 0),
       ],
     },
     {
       startIndex: 0,
+      color: new Color('#55bddd'),
       destinations: [
-        new Vector3(15, 7, 0),
+        new Vector3(15, 10, 0),
         new Vector3(10, -10, 0),
       ],
     },
     {
       startIndex: 0,
+      color: new Color('#e47744'),
       destinations: [
-        new Vector3(7, 7, 0),
+        new Vector3(7, 10, 0),
         new Vector3(-15, 4, 0)
       ],
     },
     {
       startIndex: 0,
+      color: new Color('#21afda'),
       destinations: [
-        new Vector3(7, 4, 3),
+        new Vector3(7, 6, 3),
         new Vector3(-10, 1, 3)
       ],
     },
     {
       startIndex: 0,
+      color: new Color('#156c86'),
       destinations: [
-        new Vector3(11, 7, -3),
+        new Vector3(11, 10, -3),
         new Vector3(8, -10, -3),
       ],
     },
     {
       startIndex: 0,
+      color: new Color('#da5b21'),
       destinations: [
-        new Vector3(9, 7, -1),
+        new Vector3(9, 10, -1),
         new Vector3(-3, -10, -1),
       ],
     },
     {
       startIndex: 0,
+      color: new Color('#187a97'),
       destinations: [
-        new Vector3(7, 7, -2),
+        new Vector3(7, 10, -2),
         new Vector3(1, -10, -2),
       ],
     },
@@ -95,7 +102,7 @@ const waypoints = {
 
 class Dots extends MonoBehaviour {
   parameters = {
-    dotCount: 1000,
+    dotCount: 10000,
     dotSize: 20,
     area: 100
   }
@@ -128,10 +135,12 @@ class Dots extends MonoBehaviour {
       currentDestinations[x] = destinations[startIndex].x;
       currentDestinations[y] = destinations[startIndex].y;
       currentDestinations[z] = destinations[startIndex].z;
-      colors[x] = Math.random();
-      colors[y] = Math.random();
-      colors[z] = Math.random();
-      sizes[i] = 0.2;
+
+      const color = waypointBranch.color;
+      colors[x] = color.r;
+      colors[y] = color.g;
+      colors[z] = color.b;
+      sizes[i] = 0.5;
       waypointIndices[i] = startIndex;
     }
 
@@ -173,7 +182,6 @@ class Dots extends MonoBehaviour {
           gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
         }
       `,
-      blending: AdditiveBlending,
       depthTest: false,
       transparent: true
     });
@@ -184,7 +192,7 @@ class Dots extends MonoBehaviour {
       transparent: true,
       color: 0x60afc1
     })
-    this.points = new Points(this.geometry, this.altMaterial);
+    this.points = new Points(this.geometry, this.material);
     this.group.add(this.points);
   }
 
