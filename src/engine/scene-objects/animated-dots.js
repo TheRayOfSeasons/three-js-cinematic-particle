@@ -1,5 +1,4 @@
 import {
-  AdditiveBlending,
   BoxGeometry,
   BufferAttribute,
   BufferGeometry,
@@ -27,16 +26,6 @@ const clock = new Clock();
 
 function getDistance(x1, y1, x2, y2) {
   return Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2));
-}
-
-/**
- * @typedef {Number} loopIncrementIndex
- * @param {Array} array
- * @param {Number} currentIndex
- */
-function loopIncrementIndex(array, currentIndex, defaultIndex) {
-  const newIndex = currentIndex + 1;
-  return currentIndex < array.length - 1 ? newIndex : defaultIndex;
 }
 
 const waypoints = {
@@ -242,7 +231,7 @@ class MouseOverDotAnimation extends MonoBehaviour {
         const waypointMeshMaterial = new MeshNormalMaterial();
         const waypointMesh = new Mesh(waypointMeshGeometry, waypointMeshMaterial);
         this.group.add(waypointMesh);
-        waypointMesh.position.set(targetDestination .x, targetDestination .y, targetDestination .z);
+        waypointMesh.position.set(targetDestination.x, targetDestination.y, targetDestination.z);
       }
 
       const planeHelper = new PlaneHelper(this.raycastPlane, 0xffff00);
@@ -270,7 +259,6 @@ class MouseOverDotAnimation extends MonoBehaviour {
 
       let distanceX = initialX - currentX;
       let distanceY = initialY - currentY;
-      let distanceZ = initialZ - currentZ;
 
       const mouseDistance = getDistance(
         this.intersectPoint.x, this.intersectPoint.y,
@@ -289,7 +277,7 @@ class MouseOverDotAnimation extends MonoBehaviour {
         const experimentalFactor = this.parameters.useExperimentalHoverEffect
           ? elapsedTime * 0.75
           : 0;
-        if(i % 5 == 0) {
+        if(i % 5 === 0) {
           currentX -= 0.03 * Math.cos(t + experimentalFactor);
           currentY -= 0.03 * Math.sin(t + experimentalFactor);
         }

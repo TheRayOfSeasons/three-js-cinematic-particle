@@ -1,7 +1,7 @@
 import { InteractiveScene } from '../core';
 import { DefaultCamera } from '../cameras/DefaultCamera';
 import { AnimatedDots } from '../scene-objects/animated-dots';
-import { DebugCameraController } from '../scene-objects/debug-camera-controller';
+// import { DebugCameraController } from '../scene-objects/debug-camera-controller';
 
 export class HeroScene extends InteractiveScene {
   sceneObjects = {
