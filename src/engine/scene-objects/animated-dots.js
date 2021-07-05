@@ -28,6 +28,28 @@ function getDistance(x1, y1, x2, y2) {
   return Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2));
 }
 
+/**
+ * @typedef {Vector3} bezierLerp
+ * @param {Vector3} p0
+ * @param {Vector3} p1
+ * @param {Vector3} p2
+ * @param {Vector3} p3
+ * @param {float} t
+ */
+function bezierLerp(p0, p1, p2, p3, t) {
+  const r = 1 - t;
+  const f0 = r * r * r;
+  const f1 = r * r * t * 3;
+  const f2 = r * t * t * 3;
+  const f3 = t * t * t;
+
+  return new Vector3(
+    f0 * p0.x + f1 * p1.x + f2 * p2.x + f3 * p3.x,
+    f0 * p0.y + f1 * p1.y + f2 * p2.y + f3 * p3.y,
+    f0 * p0.z + f1 * p1.z + f2 * p2.z + f3 * p3.z
+  )
+}
+
 const waypoints = {
   branches: [
     {
@@ -109,8 +131,15 @@ class Dots extends MonoBehaviour {
       const waypointBranch = waypoints.branches[branchedWaypointIndex];
       const startIndex = waypointBranch.startIndex;
 
-      const startPosition = new Vector3().copy(waypointBranch.startDestination);
-      startPosition.lerp(
+      // const startPosition = new Vector3().copy(waypointBranch.startDestination);
+      // startPosition.lerp(
+      //   waypointBranch.targetDestination,
+      //   ((i + 1) / waypoints.branches.length) / batchCount
+      // );
+      const startPosition = bezierLerp(
+        waypointBranch.startDestination,
+        new Vector3(0, 0, 0),
+        new Vector3(-5, -3, 0),
         waypointBranch.targetDestination,
         ((i + 1) / waypoints.branches.length) / batchCount
       );
@@ -192,7 +221,7 @@ class MouseOverDotAnimation extends MonoBehaviour {
   parameters = {
     ease: 0.05,
     affectedArea: 1,
-    useExperimentalHoverEffect: false,
+    useExperimentalHoverEffect: true,
     keepDynamicWhenIdle: true,
   }
 
@@ -293,8 +322,8 @@ class MouseOverDotAnimation extends MonoBehaviour {
         // this defines the movements of the points outside the affected area of the mouse position
 
         if(this.parameters.keepDynamicWhenIdle) {
-
-          const interpolationVector = new Vector3(
+          const waypointBranch = this.dots.points.geometry.attributes.waypointBranch.array[i];
+          let interpolationVector = new Vector3(
             currentX,
             currentY,
             currentZ
@@ -305,6 +334,20 @@ class MouseOverDotAnimation extends MonoBehaviour {
             this.dots.points.geometry.attributes.currentDestination.array[z]
           );
           const preDistance = interpolationVector.distanceTo(destination);
+          const distanceFromStart = interpolationVector.distanceTo(waypoints.branches[waypointBranch].startDestination);
+          const distanceFromTarget = interpolationVector.distanceTo(waypoints.branches[waypointBranch].targetDestination);
+          // interpolationVector = bezierLerp(
+          //   waypoints.branches[waypointBranch].startDestination,
+          //   new Vector3(0, 0, 0),
+          //   new Vector3(-5, -3, 0),
+          //   waypoints.branches[waypointBranch].targetDestination,
+          //   Math.atan2(distanceFromStart / (distanceFromStart + distanceFromTarget), 0.5)
+          //   // Math.atan2(0.5, preDistance * 0.01)
+
+          // );
+          if(i == 0) {
+            // console.log(Math.atan2(0.025, preDistance));
+          }
           interpolationVector.lerp(
             destination,
             Math.atan2(0.05, preDistance)
@@ -315,7 +358,6 @@ class MouseOverDotAnimation extends MonoBehaviour {
           //   console.log('lerpDistance:', lerpDistance);
           // }
           if(lerpDistance <= 0.01) {
-            const waypointBranch = this.dots.points.geometry.attributes.waypointBranch.array[i];
             currentX = waypoints.branches[waypointBranch].startDestination.x;
             currentY = waypoints.branches[waypointBranch].startDestination.y;
             // this.dots.points.geometry.attributes.currentDestination.array[x] = newWaypoint.x;
@@ -329,6 +371,7 @@ class MouseOverDotAnimation extends MonoBehaviour {
           else {
             currentX = interpolationVector.x + ((Math.random() - 0.5) * 0.1);
             currentY = interpolationVector.y + ((Math.random() - 0.5) * 0.1);
+            currentZ = interpolationVector.z + ((Math.random() - 0.5) * 0.1);
           }
 
           // const t = Math.atan2(initialX - interpolationVector.x, initialY - interpolationVector.y);
