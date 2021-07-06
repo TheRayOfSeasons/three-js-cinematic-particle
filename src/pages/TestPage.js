@@ -4,17 +4,20 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 // import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { ClearPass } from 'three/examples/jsm/postprocessing/ClearPass';
 
 import {
   AdditiveBlending,
   BufferGeometry,
   Color,
+  Group,
   LinearFilter,
   MeshBasicMaterial,
   MeshNormalMaterial,
   RGBAFormat,
   ShaderMaterial,
+  TextGeometry,
   Texture,
   UniformsUtils,
   Vector2,
@@ -481,6 +484,22 @@ function SphereToQuads(g) {
   g.setIndex(indices);
 }
 
+function getCenter(vectors) {
+  let totalX = 0.0;
+  let totalY = 0.0;
+  let totalZ = 0.0;
+  for(const vector of vectors) {
+    totalX += vector.x;
+    totalY += vector.y;
+    totalZ += vector.z;
+  }
+  return new Vector3(
+    totalX / vectors.length,
+    totalY / vectors.length,
+    totalZ / vectors.length,
+  );
+}
+
 const LAYERS = {
   ENTIRE_SCENE: 0,
   BLOOM_SCENE: 1,
@@ -722,66 +741,11 @@ const initializeBlurredAnimation = canvas => {
       camera.position.z = 500;
       return camera;
     },
-    sphereHero: {
-      group: new THREE.Group(),
-      rotatingGroup: new THREE.Group(),
-      vertexAnimatorMaterial: new THREE.ShaderMaterial({
-        uniforms: {
-          uThreshold: { value: 10.5 },
-          uTime: { value: 0.0 },
-          uSize: { value: 3.0 },
-          uTarget: { value: new THREE.Vector3(-0, 0, 0) },
-          uColor: { value: new THREE.Color('#747474') },
-        },
-        vertexShader: `
-          uniform float uSize;
-          uniform float uTime;
-          uniform float uThreshold;
-          uniform vec3 uTarget;
-
-          void main()
-          {
-            position.x = sin(uTime + position.y);
-            vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-            // float distanceFromTarget = distance(uTarget, position);
-            // if(distanceFromTarget <= uThreshold)
-            // {
-            // }
-            // vec4 viewPosition = viewMatrix * modelPosition;
-            // gl_PointSize = (uSize / viewPosition.z);
-            // gl_PointSize = uSize;
-
-            // mvPosition.x += 1.0;
-            modelPosition.y = sin(uTime);
-
-            gl_Position = projectionMatrix * modelPosition * viewMatrix;
-          }
-        `,
-        fragmentShader: `
-          uniform vec3 uColor;
-
-          void main()
-          {
-            gl_FragColor = vec4(uColor, 1.0);
-          }
-        `,
-        blending: THREE.AdditiveBlending
-      }),
-      target: new THREE.Vector3(-500, 0, 0),
-      pointsGeometry: new THREE.SphereBufferGeometry(250, 24, 16),
-      lineGeometry: new THREE.SphereBufferGeometry(250, 24, 16),
-      diffuseGeometry: new THREE.SphereBufferGeometry(250, 24, 16),
-      init: function(camera) {
-        this.pointsGeometry.clearGroups();
-        this.pointsGeometry.addGroup(0, Infinity, 0);
-        this.pointsGeometry.addGroup(0, Infinity, 1);
-        const pointsMaterial = new THREE.PointsMaterial({
-          size: 5,
-          sizeAttenuation: true,
-          color: 0xffffff,
-          blending: THREE.AdditiveBlending
-        })
-        this.pointCloudAnimatorShader = new THREE.ShaderMaterial({
+    sphereHero: () => {
+      return {
+        group: new THREE.Group(),
+        rotatingGroup: new THREE.Group(),
+        vertexAnimatorMaterial: new THREE.ShaderMaterial({
           uniforms: {
             uThreshold: { value: 10.5 },
             uTime: { value: 0.0 },
@@ -794,10 +758,10 @@ const initializeBlurredAnimation = canvas => {
             uniform float uTime;
             uniform float uThreshold;
             uniform vec3 uTarget;
-  
+
             void main()
             {
-              position.x = smoothstep(πosition.x, 5.0, uTime);
+              position.x = sin(uTime + position.y);
               vec4 modelPosition = modelMatrix * vec4(position, 1.0);
               // float distanceFromTarget = distance(uTarget, position);
               // if(distanceFromTarget <= uThreshold)
@@ -806,135 +770,242 @@ const initializeBlurredAnimation = canvas => {
               // vec4 viewPosition = viewMatrix * modelPosition;
               // gl_PointSize = (uSize / viewPosition.z);
               // gl_PointSize = uSize;
-  
+
               // mvPosition.x += 1.0;
-              // modelPosition.y = smoothstep(modelPosition.y, 5.0, uTime);
-  
+              modelPosition.y = sin(uTime);
+
               gl_Position = projectionMatrix * modelPosition * viewMatrix;
             }
           `,
           fragmentShader: `
             uniform vec3 uColor;
-  
+
             void main()
             {
               gl_FragColor = vec4(uColor, 1.0);
             }
           `,
           blending: THREE.AdditiveBlending
-        });
-        const pointCloud = new THREE.Points(this.pointsGeometry, [pointsMaterial]);
-        this.rotatingGroup.add(pointCloud);
-        pointCloud.layers.disable(LAYERS.BLOOM_SCENE);
-
-        // SphereToQuads(this.lineGeometry);
-        this.lineGeometry.clearGroups();
-        this.lineGeometry.addGroup(0, Infinity, 0);
-        this.lineGeometry.addGroup(0, Infinity, 1);
-        const lineMaterial = new THREE.MeshBasicMaterial({ color: 0x747474, wireframe: true });
-        const lineMesh = new THREE.LineSegments(this.lineGeometry, [lineMaterial]);
-        this.rotatingGroup.add(lineMesh);
-
-        const translucentMaterial = new THREE.MeshBasicMaterial({
-          color: 0xffffff,
-          transparent: true,
-          opacity: 0.1,
-        });
-        const translucentMesh = new THREE.Mesh(this.diffuseGeometry, translucentMaterial);
-        // this.rotatingGroup.add(translucentMesh);
-
-        // const light = new THREE.PointLight(0x60a1c4, 0.8); // white light
-        // light.position.set(30, 100, 50);
-        // this.group.add(light);
-
-        this.rotatingGroup.layers.enable(LAYERS.ENTIRE_SCENE);
-
-        const lightGeometry = new THREE.SphereBufferGeometry(50, 24, 16);
-        const lightMaterial = new THREE.MeshBasicMaterial({
-          color: '#24536d',
-        });
-        const lightMesh = new THREE.Mesh(lightGeometry, lightMaterial);
-        this.group.add(lightMesh);
-        lightMesh.layers.enable(LAYERS.BLOOM_SCENE);
-
-        this.group.add(this.rotatingGroup);
-        this.group.rotation.z = -Math.PI * 0.15;
-
-        // geometry.clearGroups();
-        // geometry.addGroup(0, Infinity, 0);
-        // geometry.addGroup(0, Infinity, 1);
-
-        const getValueFromIndex = index => {
-          return this.pointsGeometry.attributes.position.array[index];
-        }
-
-        this.movingTriangles = [];
-        for(let i = 0; i < this.pointsGeometry.attributes.position.array.length; i += 9) {
-          let x1 = i;
-          let y1 = i + 1;
-          let z1 = i + 2;
-          let x2 = i + 3;
-          let y2 = i + 4;
-          let z2 = i + 5;
-          let x3 = i + 6;
-          let y3 = i + 7;
-          let z3 = i + 8;
-
-          const points = [
-            new Vector3(getValueFromIndex(x1), getValueFromIndex(y1), getValueFromIndex(z1)),
-            new Vector3(getValueFromIndex(x2), getValueFromIndex(y2), getValueFromIndex(z2)),
-            new Vector3(getValueFromIndex(x3), getValueFromIndex(y3), getValueFromIndex(z3))
-          ];
-          const geometry = new THREE.BufferGeometry().setFromPoints(points);
-          const material = new THREE.LineBasicMaterial({ color: 0xffffff });
-          const mesh = new THREE.Line(geometry, material);
-          const pointsMat = new THREE.PointsMaterial({
+        }),
+        target: new THREE.Vector3(-500, 0, 0),
+        pointsGeometry: new THREE.SphereBufferGeometry(250, 24, 16),
+        lineGeometry: new THREE.SphereBufferGeometry(250, 24, 16),
+        diffuseGeometry: new THREE.SphereBufferGeometry(250, 24, 16),
+        init: function(camera) {
+          this.pointsGeometry.clearGroups();
+          this.pointsGeometry.addGroup(0, Infinity, 0);
+          this.pointsGeometry.addGroup(0, Infinity, 1);
+          const pointsMaterial = new THREE.PointsMaterial({
             size: 5,
             sizeAttenuation: true,
             color: 0xffffff,
             blending: THREE.AdditiveBlending
+          })
+          this.pointCloudAnimatorShader = new THREE.ShaderMaterial({
+            uniforms: {
+              uThreshold: { value: 10.5 },
+              uTime: { value: 0.0 },
+              uSize: { value: 3.0 },
+              uTarget: { value: new THREE.Vector3(-0, 0, 0) },
+              uColor: { value: new THREE.Color('#747474') },
+            },
+            vertexShader: `
+              uniform float uSize;
+              uniform float uTime;
+              uniform float uThreshold;
+              uniform vec3 uTarget;
+    
+              void main()
+              {
+                position.x = smoothstep(πosition.x, 5.0, uTime);
+                vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+                // float distanceFromTarget = distance(uTarget, position);
+                // if(distanceFromTarget <= uThreshold)
+                // {
+                // }
+                // vec4 viewPosition = viewMatrix * modelPosition;
+                // gl_PointSize = (uSize / viewPosition.z);
+                // gl_PointSize = uSize;
+    
+                // mvPosition.x += 1.0;
+                // modelPosition.y = smoothstep(modelPosition.y, 5.0, uTime);
+    
+                gl_Position = projectionMatrix * modelPosition * viewMatrix;
+              }
+            `,
+            fragmentShader: `
+              uniform vec3 uColor;
+    
+              void main()
+              {
+                gl_FragColor = vec4(uColor, 1.0);
+              }
+            `,
+            blending: THREE.AdditiveBlending
           });
-          const meshPoints = new THREE.Points(geometry, pointsMat);
-          const axesHelper = new THREE.AxesHelper(200);
-          const geom = new THREE.BoxGeometry(50, 50, 50);
-          const mat = new THREE.MeshNormalMaterial();
-          const meshtest = new THREE.Mesh(geom, mat);
-          mesh.lookAt(pointCloud);
-          this.movingTriangles.push(meshtest);
-          this.group.add(meshtest)
-          meshtest.originalPosition = new Vector3(points[0].x, points[0].y, points[0].z);
-          meshtest.position.set(points[0].x, points[0].y, points[0].z)
-          // this.rotatingGroup.add(mesh);
-          // mesh.add(meshPoints);
-          // mesh.add(axesHelper);
-          // mesh.add(meshtest);
-        }
+          const pointCloud = new THREE.Points(this.pointsGeometry, [pointsMaterial]);
+          this.rotatingGroup.add(pointCloud);
+          pointCloud.layers.disable(LAYERS.BLOOM_SCENE);
 
-        const axesHelper = new THREE.AxesHelper(200);
-        pointCloud.add(axesHelper);
+          // SphereToQuads(this.lineGeometry);
+          this.lineGeometry.clearGroups();
+          this.lineGeometry.addGroup(0, Infinity, 0);
+          this.lineGeometry.addGroup(0, Infinity, 1);
+          const lineMaterial = new THREE.MeshBasicMaterial({ color: 0x747474, wireframe: true });
+          const lineMesh = new THREE.LineSegments(this.lineGeometry, [lineMaterial]);
+          this.rotatingGroup.add(lineMesh);
 
-      },
-      update: function(time, camera) {
-        // this.vertexAnimatorMaterial.uniforms['uTime'].value = time;
-        // this.pointCloudAnimatorShader.uniforms['uTime'].value = time;
-        // let glowWorldPosition = new THREE.Vector3();
-        // glowWorldPosition = this.glowMesh.getWorldPosition(glowWorldPosition);
-        // let viewVector = new THREE.Vector3().subVectors(camera.position, glowWorldPosition);
-        // this.glowMesh.material.uniforms.viewVector.value = viewVector;
-        let log = true;
-        for(const triangle of this.movingTriangles) {
-          const distance = triangle.position.distanceTo(this.target);
-          triangle.position.lerp(this.target, Math.atan2(1.5, distance));
-          if(distance < 10) {
-            triangle.position.set(triangle.originalPosition.x, triangle.originalPosition.y, triangle.originalPosition.z);
+          this.innerSphereGeometry = new THREE.SphereBufferGeometry(100, 24, 16);
+          const innerPointsMaterial = new THREE.PointsMaterial({
+            size: 3,
+            sizeAttenuation: true,
+            color: 0xffffff,
+            blending: THREE.AdditiveBlending
+          })
+          this.innerSphere = new THREE.Points(this.innerSphereGeometry, innerPointsMaterial);
+          this.group.add(this.innerSphere);
+
+          const translucentMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.1,
+          });
+          const translucentMesh = new THREE.Mesh(this.diffuseGeometry, translucentMaterial);
+          // this.rotatingGroup.add(translucentMesh);
+
+          // const light = new THREE.PointLight(0x60a1c4, 0.8); // white light
+          // light.position.set(30, 100, 50);
+          // this.group.add(light);
+
+          this.rotatingGroup.layers.enable(LAYERS.ENTIRE_SCENE);
+
+          const lightGeometry = new THREE.SphereBufferGeometry(50, 24, 16);
+          const lightMaterial = new THREE.MeshBasicMaterial({
+            color: '#24536d',
+          });
+          const lightMesh = new THREE.Mesh(lightGeometry, lightMaterial);
+          this.group.add(lightMesh);
+          lightMesh.layers.enable(LAYERS.BLOOM_SCENE);
+
+          this.group.add(this.rotatingGroup);
+          this.group.rotation.z = -Math.PI * 0.15;
+
+          // geometry.clearGroups();
+          // geometry.addGroup(0, Infinity, 0);
+          // geometry.addGroup(0, Infinity, 1);
+          // const origin = new THREE.Vector3(-500, 100);
+          // const direction = new Vector3();
+          // direction.subVectors(new Vector3(), origin).normalize();
+          // this.raycaster = new THREE.Raycaster(origin, direction);
+          // this.group.add(new THREE.ArrowHelper(direction, origin, 500, 0xff0000));
+
+          const getValueFromIndex = index => {
+            return this.pointsGeometry.attributes.position.array[index];
           }
-          if(log) {
-            console.log('distance:', distance);
-          }
-          log = false;
+
+          this.movingTriangles = [];
+          const loader = new THREE.FontLoader();
+          let i1 = 0, i2 = 1, i3 = 2;
+          const tempMat = new MeshNormalMaterial();
+          // loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
+          //   for(let i = 0; i < this.pointsGeometry.attributes.position.array.length; i += 9) {
+          //     let x1 = i;
+          //     let y1 = i + 1;
+          //     let z1 = i + 2;
+          //     let x2 = i + 3;
+          //     let y2 = i + 4;
+          //     let z2 = i + 5;
+          //     let x3 = i + 6;
+          //     let y3 = i + 7;
+          //     let z3 = i + 8;
+    
+          //     const points = [
+          //       new Vector3(getValueFromIndex(x1), getValueFromIndex(y1), getValueFromIndex(z1)),
+          //       new Vector3(getValueFromIndex(x2), getValueFromIndex(y2), getValueFromIndex(z2)),
+          //       new Vector3(getValueFromIndex(x3), getValueFromIndex(y3), getValueFromIndex(z3)),
+          //       new Vector3(getValueFromIndex(x1), getValueFromIndex(y1), getValueFromIndex(z1)),
+          //     ];
+    
+          //     // temporary
+          //     // const textSettings = {
+          //     //   font: font,
+          //     //   size: 10,
+          //     //   height: 5,
+          //     //   curveSegments: 1,
+          //     // }
+          //     // const mesh1 = new THREE.Mesh(new THREE.TextGeometry(`${i1}`, textSettings), tempMat);
+          //     // mesh1.position.set(points[0].x, points[0].y, points[0].z);
+          //     // this.rotatingGroup.add(mesh1);
+
+          //     // const mesh2 = new THREE.Mesh(new THREE.TextGeometry(`${i2}`, textSettings), tempMat);
+          //     // mesh2.position.set(points[1].x, points[1].y, points[1].z);
+          //     // this.rotatingGroup.add(mesh2);
+
+          //     // const mesh3 = new THREE.Mesh(new THREE.TextGeometry(`${i3}`, textSettings), tempMat);
+          //     // mesh3.position.set(points[2].x, points[2].y, points[2].z);
+          //     // this.rotatingGroup.add(mesh3);
+          //     // this.movingTriangles.push(mesh1);
+          //     // this.movingTriangles.push(mesh2);
+          //     // this.movingTriangles.push(mesh3);
+          //     // i1 += 3;
+          //     // i2 += 3;
+          //     // i3 += 3;
+    
+    
+          //     const geometry = new THREE.BufferGeometry().setFromPoints(points);
+          //     const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+          //     const mesh = new THREE.Line(geometry, material);
+          //     const pointsMat = new THREE.PointsMaterial({
+          //       size: 5,
+          //       sizeAttenuation: true,
+          //       color: 0xffffff,
+          //       blending: THREE.AdditiveBlending
+          //     });
+          //     const meshPoints = new THREE.Points(geometry, pointsMat);
+          //     const axesHelper = new THREE.AxesHelper(200);
+          //     const geom = new THREE.BoxGeometry(50, 50, 50);
+          //     const mat = new THREE.MeshNormalMaterial();
+          //     const meshtest = new THREE.Mesh(geom, mat);
+    
+          //     const originalPosition = new THREE.Vector3(0, 0, 0);
+          //     const triangleGroup = new THREE.Group();
+          //     triangleGroup.add(meshPoints);
+          //     triangleGroup.add(mesh);
+          //     triangleGroup.originalPosition = originalPosition;
+          //     triangleGroup.position.set(originalPosition.x, originalPosition.y, originalPosition.z);
+          //     // triangleGroup.lookAt(pointCloud.position);
+          //     this.movingTriangles.push(triangleGroup);
+          //     this.group.add(triangleGroup);
+          //     // mesh.lookAt(pointCloud);
+          //     // meshPoints.add(mesh);
+          //     // meshPoints.originalPosition = new Vector3(points[0].x, points[0].y, points[0].z);
+          //     // meshPoints.position.set(points[0].x, points[0].y, points[0].z)
+          //     // this.rotatingGroup.add(mesh);
+          //     // mesh.add(meshPoints);
+          //     // meshPoints.add(axesHelper);
+          //     // mesh.add(meshtest);
+          //   }
+          // });
+        },
+        update: function(time, camera) {
+          // this.vertexAnimatorMaterial.uniforms['uTime'].value = time;
+          // this.pointCloudAnimatorShader.uniforms['uTime'].value = time;
+          // let glowWorldPosition = new THREE.Vector3();
+          // glowWorldPosition = this.glowMesh.getWorldPosition(glowWorldPosition);
+          // let viewVector = new THREE.Vector3().subVectors(camera.position, glowWorldPosition);
+          // this.glowMesh.material.uniforms.viewVector.value = viewVector;
+          // for(const triangle of this.movingTriangles) {
+          //   const distance = triangle.position.distanceTo(this.target);
+          //   triangle.position.lerp(this.target, Math.atan2(1.5, distance));
+          //   triangle.rotation.y = time * 0.0000001;
+          //   if(distance < 10) {
+          //     triangle.position.set(triangle.originalPosition.x, triangle.originalPosition.y, triangle.originalPosition.z);
+          //   }
+          // }
+          this.rotatingGroup.rotation.y = time * 0.0001;
+          this.innerSphere.rotation.y = -time * 0.001;
         }
-        this.rotatingGroup.rotation.y = time * 0.0001;
-      }
+      };
     },
     init: function() {
       console.log('Begin initialization...');
@@ -1014,19 +1085,42 @@ const initializeBlurredAnimation = canvas => {
         finalComposer
       }
 
-      this.sphereHero.init(this.camera);
-      this.scene.add(this.sphereHero.group);
-      this.sphereHero.group.position.z = 800;
+      this.coreGroup = new THREE.Group();
+      this.sphere1 = this.sphereHero();
+      this.sphere1.init(this.camera);
+      this.coreGroup.add(this.sphere1.group);
+      this.sphere1.group.position.z = 0;
+
+      this.sphere2 = this.sphereHero();
+      this.sphere2.init(this.camera);
+      this.coreGroup.add(this.sphere2.group);
+      this.sphere2.group.position.x = 1200;
+      this.sphere2.group.position.z = -1000;
+
+      this.sphere3 = this.sphereHero();
+      this.sphere3.init(this.camera);
+      this.coreGroup.add(this.sphere3.group);
+      this.sphere3.group.position.x = -1000;
+      this.sphere3.group.position.y = 500;
+      this.sphere3.group.position.z = -700;
+
+      this.scene.add(this.coreGroup);
+      this.coreGroup.position.z = 800
 
       this.darkMaterial = new THREE.MeshBasicMaterial( { color: "black" } );
       console.log('Initialization done!');
       this.renderer.setAnimationLoop(this.update());
       console.log('Animation started!');
+      this.controls = new OrbitControls(this.camera, canvas);
+      this.controls.enableDamping = true;
     },
     update: function() {
       console.log('Begining animation...');
       return time => {
-        this.sphereHero.update(time, this.camera);
+        this.controls.update();
+        this.sphere1.update(time, this.camera);
+        this.sphere2.update(time, this.camera);
+        this.sphere3.update(time, this.camera);
         this.scene.traverse(obj => {
           if(this.bloomLayer.test(obj.layers) === false) {
             materials[obj.uuid] = obj.material;
@@ -1042,7 +1136,7 @@ const initializeBlurredAnimation = canvas => {
         })
 
         this.composers.finalComposer.render();
-        this.sphereHero.group.position.lerp(new Vector3(0, 0, 0), 0.025);
+        this.coreGroup.position.lerp(new Vector3(0, 0, 0), 0.025);
         // this.renderer.render(this.scene, this.camera);
       }
     }
