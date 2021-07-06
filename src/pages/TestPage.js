@@ -8,9 +8,11 @@ import { ClearPass } from 'three/examples/jsm/postprocessing/ClearPass';
 
 import {
   AdditiveBlending,
+  BufferGeometry,
   Color,
   LinearFilter,
   MeshBasicMaterial,
+  MeshNormalMaterial,
   RGBAFormat,
   ShaderMaterial,
   Texture,
@@ -705,6 +707,7 @@ const initializeBlurredAnimation = canvas => {
         canvas
       });
       renderer.setSize(canvasWidth, canvasHeight);
+      renderer.toneMappingExposure = Math.pow(1, 4);
       return renderer;
     },
     createScene: function() {
@@ -726,23 +729,32 @@ const initializeBlurredAnimation = canvas => {
         uniforms: {
           uThreshold: { value: 10.5 },
           uTime: { value: 0.0 },
+          uSize: { value: 3.0 },
           uTarget: { value: new THREE.Vector3(-0, 0, 0) },
-          uColor: { value: new THREE.Color('#747474') }
+          uColor: { value: new THREE.Color('#747474') },
         },
         vertexShader: `
+          uniform float uSize;
           uniform float uTime;
           uniform float uThreshold;
           uniform vec3 uTarget;
 
           void main()
           {
+            position.x = sin(uTime + position.y);
             vec4 modelPosition = modelMatrix * vec4(position, 1.0);
             // float distanceFromTarget = distance(uTarget, position);
             // if(distanceFromTarget <= uThreshold)
             // {
             // }
-            modelPosition.x = sin(uTime + modelPosition.y);
-            gl_Position = projectionMatrix * modelPosition;
+            // vec4 viewPosition = viewMatrix * modelPosition;
+            // gl_PointSize = (uSize / viewPosition.z);
+            // gl_PointSize = uSize;
+
+            // mvPosition.x += 1.0;
+            modelPosition.y = sin(uTime);
+
+            gl_Position = projectionMatrix * modelPosition * viewMatrix;
           }
         `,
         fragmentShader: `
@@ -752,8 +764,10 @@ const initializeBlurredAnimation = canvas => {
           {
             gl_FragColor = vec4(uColor, 1.0);
           }
-        `
+        `,
+        blending: THREE.AdditiveBlending
       }),
+      target: new THREE.Vector3(-500, 0, 0),
       pointsGeometry: new THREE.SphereBufferGeometry(250, 24, 16),
       lineGeometry: new THREE.SphereBufferGeometry(250, 24, 16),
       diffuseGeometry: new THREE.SphereBufferGeometry(250, 24, 16),
@@ -767,15 +781,57 @@ const initializeBlurredAnimation = canvas => {
           color: 0xffffff,
           blending: THREE.AdditiveBlending
         })
+        this.pointCloudAnimatorShader = new THREE.ShaderMaterial({
+          uniforms: {
+            uThreshold: { value: 10.5 },
+            uTime: { value: 0.0 },
+            uSize: { value: 3.0 },
+            uTarget: { value: new THREE.Vector3(-0, 0, 0) },
+            uColor: { value: new THREE.Color('#747474') },
+          },
+          vertexShader: `
+            uniform float uSize;
+            uniform float uTime;
+            uniform float uThreshold;
+            uniform vec3 uTarget;
+  
+            void main()
+            {
+              position.x = smoothstep(πosition.x, 5.0, uTime);
+              vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+              // float distanceFromTarget = distance(uTarget, position);
+              // if(distanceFromTarget <= uThreshold)
+              // {
+              // }
+              // vec4 viewPosition = viewMatrix * modelPosition;
+              // gl_PointSize = (uSize / viewPosition.z);
+              // gl_PointSize = uSize;
+  
+              // mvPosition.x += 1.0;
+              // modelPosition.y = smoothstep(modelPosition.y, 5.0, uTime);
+  
+              gl_Position = projectionMatrix * modelPosition * viewMatrix;
+            }
+          `,
+          fragmentShader: `
+            uniform vec3 uColor;
+  
+            void main()
+            {
+              gl_FragColor = vec4(uColor, 1.0);
+            }
+          `,
+          blending: THREE.AdditiveBlending
+        });
         const pointCloud = new THREE.Points(this.pointsGeometry, [pointsMaterial]);
         this.rotatingGroup.add(pointCloud);
         pointCloud.layers.disable(LAYERS.BLOOM_SCENE);
 
-        SphereToQuads(this.lineGeometry);
+        // SphereToQuads(this.lineGeometry);
         this.lineGeometry.clearGroups();
         this.lineGeometry.addGroup(0, Infinity, 0);
         this.lineGeometry.addGroup(0, Infinity, 1);
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x747474 });
+        const lineMaterial = new THREE.MeshBasicMaterial({ color: 0x747474, wireframe: true });
         const lineMesh = new THREE.LineSegments(this.lineGeometry, [lineMaterial]);
         this.rotatingGroup.add(lineMesh);
 
@@ -787,15 +843,15 @@ const initializeBlurredAnimation = canvas => {
         const translucentMesh = new THREE.Mesh(this.diffuseGeometry, translucentMaterial);
         // this.rotatingGroup.add(translucentMesh);
 
-        const light = new THREE.PointLight(0x60a1c4, 0.8); // white light
-        light.position.set(30, 100, 50);
-        this.group.add(light);
+        // const light = new THREE.PointLight(0x60a1c4, 0.8); // white light
+        // light.position.set(30, 100, 50);
+        // this.group.add(light);
 
         this.rotatingGroup.layers.enable(LAYERS.ENTIRE_SCENE);
 
-        const lightGeometry = new THREE.SphereBufferGeometry(100, 24, 16);
+        const lightGeometry = new THREE.SphereBufferGeometry(50, 24, 16);
         const lightMaterial = new THREE.MeshBasicMaterial({
-          color: 0x60a1c4,
+          color: '#24536d',
         });
         const lightMesh = new THREE.Mesh(lightGeometry, lightMaterial);
         this.group.add(lightMesh);
@@ -807,15 +863,76 @@ const initializeBlurredAnimation = canvas => {
         // geometry.clearGroups();
         // geometry.addGroup(0, Infinity, 0);
         // geometry.addGroup(0, Infinity, 1);
+
+        const getValueFromIndex = index => {
+          return this.pointsGeometry.attributes.position.array[index];
+        }
+
+        this.movingTriangles = [];
+        for(let i = 0; i < this.pointsGeometry.attributes.position.array.length; i += 9) {
+          let x1 = i;
+          let y1 = i + 1;
+          let z1 = i + 2;
+          let x2 = i + 3;
+          let y2 = i + 4;
+          let z2 = i + 5;
+          let x3 = i + 6;
+          let y3 = i + 7;
+          let z3 = i + 8;
+
+          const points = [
+            new Vector3(getValueFromIndex(x1), getValueFromIndex(y1), getValueFromIndex(z1)),
+            new Vector3(getValueFromIndex(x2), getValueFromIndex(y2), getValueFromIndex(z2)),
+            new Vector3(getValueFromIndex(x3), getValueFromIndex(y3), getValueFromIndex(z3))
+          ];
+          const geometry = new THREE.BufferGeometry().setFromPoints(points);
+          const material = new THREE.LineBasicMaterial({ color: 0xffffff });
+          const mesh = new THREE.Line(geometry, material);
+          const pointsMat = new THREE.PointsMaterial({
+            size: 5,
+            sizeAttenuation: true,
+            color: 0xffffff,
+            blending: THREE.AdditiveBlending
+          });
+          const meshPoints = new THREE.Points(geometry, pointsMat);
+          const axesHelper = new THREE.AxesHelper(200);
+          const geom = new THREE.BoxGeometry(50, 50, 50);
+          const mat = new THREE.MeshNormalMaterial();
+          const meshtest = new THREE.Mesh(geom, mat);
+          mesh.lookAt(pointCloud);
+          this.movingTriangles.push(meshtest);
+          this.group.add(meshtest)
+          meshtest.originalPosition = new Vector3(points[0].x, points[0].y, points[0].z);
+          meshtest.position.set(points[0].x, points[0].y, points[0].z)
+          // this.rotatingGroup.add(mesh);
+          // mesh.add(meshPoints);
+          // mesh.add(axesHelper);
+          // mesh.add(meshtest);
+        }
+
+        const axesHelper = new THREE.AxesHelper(200);
+        pointCloud.add(axesHelper);
+
       },
       update: function(time, camera) {
         // this.vertexAnimatorMaterial.uniforms['uTime'].value = time;
+        // this.pointCloudAnimatorShader.uniforms['uTime'].value = time;
         // let glowWorldPosition = new THREE.Vector3();
         // glowWorldPosition = this.glowMesh.getWorldPosition(glowWorldPosition);
         // let viewVector = new THREE.Vector3().subVectors(camera.position, glowWorldPosition);
         // this.glowMesh.material.uniforms.viewVector.value = viewVector;
-        // this.pointsGeometry.attributes.position.needsUpdate = true;
-        // this.lineGeometry.attributes.position.needsUpdate = true;
+        let log = true;
+        for(const triangle of this.movingTriangles) {
+          const distance = triangle.position.distanceTo(this.target);
+          triangle.position.lerp(this.target, Math.atan2(1.5, distance));
+          if(distance < 10) {
+            triangle.position.set(triangle.originalPosition.x, triangle.originalPosition.y, triangle.originalPosition.z);
+          }
+          if(log) {
+            console.log('distance:', distance);
+          }
+          log = false;
+        }
         this.rotatingGroup.rotation.y = time * 0.0001;
       }
     },
@@ -857,7 +974,7 @@ const initializeBlurredAnimation = canvas => {
 			bloomComposer.addPass(bloomPass);
 
       const finalPass = new ShaderPass(
-				new THREE.ShaderMaterial( {
+				new THREE.ShaderMaterial({
 					uniforms: {
 						baseTexture: { value: null },
 						bloomTexture: { value: bloomComposer.renderTarget2.texture }
@@ -899,7 +1016,7 @@ const initializeBlurredAnimation = canvas => {
 
       this.sphereHero.init(this.camera);
       this.scene.add(this.sphereHero.group);
-
+      this.sphereHero.group.position.z = 800;
 
       this.darkMaterial = new THREE.MeshBasicMaterial( { color: "black" } );
       console.log('Initialization done!');
@@ -923,7 +1040,9 @@ const initializeBlurredAnimation = canvas => {
             delete materials[obj.uuid];
           }
         })
+
         this.composers.finalComposer.render();
+        this.sphereHero.group.position.lerp(new Vector3(0, 0, 0), 0.025);
         // this.renderer.render(this.scene, this.camera);
       }
     }
