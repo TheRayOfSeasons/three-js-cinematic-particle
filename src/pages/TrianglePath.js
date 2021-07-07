@@ -9,6 +9,8 @@ const createTrianglePath = (origin, target) => {
     init: function() {
       const interval = 0.1;
       const size = 50;
+      const textureLoader = new THREE.TextureLoader();
+      const pointTexture = textureLoader.load('/b10-gradient.png');
       this.triangles = [];
       for(let i = interval; i < 1.0; i += interval) {
         const localOrigin = new THREE.Vector3();
@@ -24,9 +26,11 @@ const createTrianglePath = (origin, target) => {
         const mesh = new THREE.LineSegments(geometry, material);
 
         const pointsMat = new THREE.PointsMaterial({
-          size: 5,
+          alphaMap: pointTexture,
+          transparent: true,
+          size: 12,
           sizeAttenuation: true,
-          color: 0xffffff,
+          color: '#24536d',
           blending: THREE.AdditiveBlending
         });
         const meshPoints = new THREE.Points(geometry, pointsMat);

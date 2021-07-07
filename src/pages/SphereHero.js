@@ -57,20 +57,24 @@ const createSpherePoint = ({ renderTriangles=false }) => {
       this.clearedForTranfer = 0;
     },
     init: function(camera) {
+      const textureLoader = new THREE.TextureLoader();
+      const pointTexture = textureLoader.load('/b10-gradient.png');
+
       this.pointsGeometry.clearGroups();
       this.pointsGeometry.addGroup(0, Infinity, 0);
       this.pointsGeometry.addGroup(0, Infinity, 1);
       const pointsMaterial = new THREE.PointsMaterial({
-        size: 5,
+        alphaMap: pointTexture,
+        transparent: true,
+        size: 12,
         sizeAttenuation: true,
-        color: 0xffffff,
+        color: '#24536d',
         blending: THREE.AdditiveBlending
       })
       const pointCloud = new THREE.Points(this.pointsGeometry, [pointsMaterial]);
       this.rotatingGroup.add(pointCloud);
       pointCloud.layers.disable(LAYERS.BLOOM_SCENE);
 
-      // SphereToQuads(this.lineGeometry);
       this.lineGeometry.clearGroups();
       this.lineGeometry.addGroup(0, Infinity, 0);
       this.lineGeometry.addGroup(0, Infinity, 1);
@@ -79,9 +83,11 @@ const createSpherePoint = ({ renderTriangles=false }) => {
       this.rotatingGroup.add(lineMesh);
 
       const innerPointsMaterial = new THREE.PointsMaterial({
+        alphaMap: pointTexture,
+        transparent: true,
         size: 3,
         sizeAttenuation: true,
-        color: 0xffffff,
+        color: 0x747474,
         blending: THREE.AdditiveBlending
       })
       this.innerSphere = new THREE.Points(this.innerSphereGeometry, innerPointsMaterial);
@@ -90,24 +96,45 @@ const createSpherePoint = ({ renderTriangles=false }) => {
       this.rotatingGroup.layers.enable(LAYERS.ENTIRE_SCENE);
 
       const lightGeometry = new THREE.SphereBufferGeometry(50, 24, 16);
-      const lightMaterial = new THREE.MeshBasicMaterial({
-        color: '#24536d',
+      const lightMaterial = new THREE.MeshPhongMaterial({
+        color: '#051e2c',
       });
       const lightMesh = new THREE.Mesh(lightGeometry, lightMaterial);
       this.group.add(lightMesh);
       lightMesh.layers.enable(LAYERS.BLOOM_SCENE);
 
+      const dotGeometry = new THREE.SphereBufferGeometry(50, 8, 8);
+      const dotMaterial = new THREE.MeshPhongMaterial({ color: '#24536d' });
+      const dotInstancedMesh = new THREE.InstancedMesh(dotGeometry, dotMaterial);
+      this.rotatingGroup.add(dotInstancedMesh);
+      dotInstancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+      const dotDummy = new THREE.Object3D();
+      for(let i = 0, i3 = 0; i < this.pointsGeometry.attributes.position.array.length; i3 += 3) {
+        const x = i3;
+        const y = i3 + 1;
+        const z = i3 + 2;
+
+        const xValue = this.pointsGeometry.attributes.position.array[x];
+        const yValue = this.pointsGeometry.attributes.position.array[y];
+        const zValue = this.pointsGeometry.attributes.position.array[z];
+
+        dotDummy.position.set(xValue, yValue, zValue);
+        dotDummy.updateMatrix();
+        dotInstancedMesh.setMatrixAt(i++, dotDummy.matrix)
+      }
+
+      const getValueFromIndex = index => {
+        const adjustedIndex = index * 3;
+        return new THREE.Vector3(
+          this.pointsGeometry.attributes.position.array[adjustedIndex],
+          this.pointsGeometry.attributes.position.array[adjustedIndex + 1],
+          this.pointsGeometry.attributes.position.array[adjustedIndex + 2]
+        );
+      }
+
       this.group.add(this.rotatingGroup);
       this.group.rotation.z = -Math.PI * 0.15;
-
-      // const getValueFromIndex = index => {
-      //   const adjustedIndex = index * 3;
-      //   return new THREE.Vector3(
-      //     this.pointsGeometry.attributes.position.array[adjustedIndex],
-      //     this.pointsGeometry.attributes.position.array[adjustedIndex + 1],
-      //     this.pointsGeometry.attributes.position.array[adjustedIndex + 2]
-      //   );
-      // }
 
       // this.movingTriangles = [];
       // this.trianglePositions = [];
@@ -159,6 +186,8 @@ const createSpherePoint = ({ renderTriangles=false }) => {
     update: function(time, camera) {
       this.rotatingGroup.rotation.y = time * 0.0001;
       this.innerSphere.rotation.y = -time * 0.001;
+
+
     }
   };
 }
