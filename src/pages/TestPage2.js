@@ -144,6 +144,20 @@ const SphereAnimation = canvas => {
       this.sphere3.group.position.y = 500;
       this.sphere3.group.position.z = -700;
 
+      this.sphere4 = createSpherePoint({ renderTriangles : true });
+      this.sphere4.init(this.camera);
+      this.coreGroup.add(this.sphere4.group);
+      this.sphere4.group.position.x = -1200;
+      this.sphere4.group.position.y = -500;
+      this.sphere4.group.position.z = -800;
+
+      this.sphere5 = createSpherePoint({ renderTriangles : true });
+      this.sphere5.init(this.camera);
+      this.coreGroup.add(this.sphere5.group);
+      this.sphere5.group.position.x = 1000;
+      this.sphere5.group.position.y = 500;
+      this.sphere5.group.position.z = -200;
+
       // this.sphere1.transferTriangles(this.sphere3);
       this.trianglePath1 = createTrianglePath(this.sphere1.group.position, this.sphere2.group.position);
       this.trianglePath1.init();
@@ -152,6 +166,14 @@ const SphereAnimation = canvas => {
       this.trianglePath2 = createTrianglePath(this.sphere1.group.position, this.sphere3.group.position);
       this.trianglePath2.init();
       this.coreGroup.add(this.trianglePath2.group);
+
+      this.trianglePath3 = createTrianglePath(this.sphere1.group.position, this.sphere4.group.position);
+      this.trianglePath3.init();
+      this.coreGroup.add(this.trianglePath3.group);
+
+      this.trianglePath4 = createTrianglePath(this.sphere1.group.position, this.sphere5.group.position);
+      this.trianglePath4.init();
+      this.coreGroup.add(this.trianglePath4.group);
 
       this.scene.add(this.coreGroup);
       this.coreGroup.position.z = 800
@@ -185,27 +207,31 @@ const SphereAnimation = canvas => {
         this.sphere1.update(time, this.camera);
         this.sphere2.update(time, this.camera);
         this.sphere3.update(time, this.camera);
+        this.sphere4.update(time, this.camera);
+        this.sphere5.update(time, this.camera);
 
         this.trianglePath1.update(time);
         this.trianglePath2.update(time);
+        this.trianglePath3.update(time);
+        this.trianglePath4.update(time);
 
-        this.scene.traverse(obj => {
-          if(this.bloomLayer.test(obj.layers) === false) {
-            materials[obj.uuid] = obj.material;
-            obj.material = this.darkMaterial;
-          }
-        });
-        this.composers.bloomComposer.render();
-        this.scene.traverse(obj => {
-          if(materials[obj.uuid]) {
-            obj.material = materials[obj.uuid];
-            delete materials[obj.uuid];
-          }
-        })
+        // this.scene.traverse(obj => {
+        //   if(this.bloomLayer.test(obj.layers) === false) {
+        //     materials[obj.uuid] = obj.material;
+        //     obj.material = this.darkMaterial;
+        //   }
+        // });
+        // this.composers.bloomComposer.render();
+        // this.scene.traverse(obj => {
+        //   if(materials[obj.uuid]) {
+        //     obj.material = materials[obj.uuid];
+        //     delete materials[obj.uuid];
+        //   }
+        // })
 
-        this.composers.finalComposer.render();
+        // this.composers.finalComposer.render();
         this.coreGroup.position.lerp(new THREE.Vector3(0, 0, 0), 0.025);
-        // this.renderer.render(this.scene, this.camera);
+        this.renderer.render(this.scene, this.camera);
         stats.end();
       }
     }
@@ -218,31 +244,32 @@ export const TestPage2 = () => {
   const blurredCanvas = useRef(null);
 
   useEffect(() => {
-    if(canvasScene) {
-      let fgSpheres = AnimatedLinesAnimation(canvasScene.current);
+    if(blurredCanvas) {
+      let fgSpheres = SphereAnimation(canvasScene.current);
       fgSpheres.init();
+      document.getElementById('test-stats').appendChild(stats.dom);
+    }
+  }, [blurredCanvas]);
+
+  useEffect(() => {
+    if(canvasScene) {
+      // let bglines = AnimatedLinesAnimation(blurredCanvas.current);
+      // bglines.init();
     }
   }, [canvasScene]);
 
-  useEffect(() => {
-    if(blurredCanvas) {
-      let bgLines = SphereAnimation(blurredCanvas.current);
-      bgLines.init();
-      document.getElementById('test-stats').appendChild(stats.dom);
-    }
-  }, [blurredCanvas])
-
   return (
     <div className="hero-container">
+      <div className="blue-background"></div>
       <div id="test-stats"></div>
-      <canvas ref={canvasScene} style={{
+      <canvas ref={blurredCanvas} style={{
         width: '100vw',
         height: '100vh',
         position: 'absolute',
         zIndex: '-2'
       }}>
       </canvas>
-      <canvas ref={blurredCanvas} className="blurred" style={{
+      <canvas ref={canvasScene} className="blurred" style={{
         width: '100vw',
         height: '100vh',
         // position: 'absolute',
