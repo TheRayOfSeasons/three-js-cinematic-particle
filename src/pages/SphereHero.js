@@ -45,7 +45,7 @@ const createSpherePoint = ({ renderTriangles=false }) => {
     pointsGeometry: new THREE.SphereBufferGeometry(250, 16, 12),
     lineGeometry: new THREE.SphereBufferGeometry(250, 16, 12),
     diffuseGeometry: new THREE.SphereBufferGeometry(250, 16, 12),
-    innerSphereGeometry: new THREE.SphereBufferGeometry(100, 24, 16),
+    innerSphereGeometry: new THREE.SphereBufferGeometry(150, 24, 16),
     hasTriangles: renderTriangles,
     transferTarget: undefined,
     clearedForTranfer: 0,
@@ -78,13 +78,23 @@ const createSpherePoint = ({ renderTriangles=false }) => {
       // // this.rotatingGroup.add(pointCloud);
       // pointCloud.layers.disable(LAYERS.BLOOM_SCENE);
 
-      const pointLight = new THREE.PointLight('#003a8e', 3);
-      this.rotatingGroup.add(pointLight);
+      // const pointLight = new THREE.PointLight('#96fc8c', 3);
+      // pointLight.position.y = 10;
+      // this.rotatingGroup.add(pointLight);
+
+      // const pointLight2 = new THREE.PointLight('#25d1db', 3);
+      // pointLight2.position.y = -10;
+      // this.rotatingGroup.add(pointLight2);
 
       this.lineGeometry.clearGroups();
       this.lineGeometry.addGroup(0, Infinity, 0);
       this.lineGeometry.addGroup(0, Infinity, 1);
-      const lineMaterial = new THREE.MeshBasicMaterial({ color: 0x747474, wireframe: true });
+      const lineMaterial = new THREE.MeshBasicMaterial({
+        color: 0x747474,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.1,
+      });
       const lineMesh = new THREE.LineSegments(this.lineGeometry, [lineMaterial]);
       this.rotatingGroup.add(lineMesh);
 
@@ -101,8 +111,9 @@ const createSpherePoint = ({ renderTriangles=false }) => {
 
       this.rotatingGroup.layers.enable(LAYERS.ENTIRE_SCENE);
 
-      const lightGeometry = new THREE.SphereBufferGeometry(50, 24, 16);
-      const lightMaterial = new THREE.MeshPhongMaterial({ color: '#003a8e' });
+
+      const lightGeometry = new THREE.SphereBufferGeometry(100, 24, 16);
+      const lightMaterial = new THREE.MeshLambertMaterial({ color: '#158186' });
       const lightMesh = new THREE.Mesh(lightGeometry, lightMaterial);
       this.group.add(lightMesh);
       lightMesh.layers.enable(LAYERS.BLOOM_SCENE);
@@ -136,7 +147,7 @@ const createSpherePoint = ({ renderTriangles=false }) => {
       }
 
       const pointCloudGeometry = BufferGeometryUtils.mergeBufferGeometries(pointCloudGeometries);
-      const pointCloudMaterial = new THREE.MeshPhongMaterial({ color: '#8bc63f' });
+      const pointCloudMaterial = new THREE.MeshLambertMaterial({ color: '#1c1546' });
       const pointCloudHighRes = new THREE.Mesh(pointCloudGeometry, pointCloudMaterial);
       pointCloudHighRes.layers.enable(LAYERS.BLOOM_SCENE);
       this.rotatingGroup.add(pointCloudHighRes);

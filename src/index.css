@@ -25,9 +25,10 @@ code {
   height: 100%;
   z-index: -100;
   /* background: #002d6b; */
-  background: #fcfcfc;
+  background: #1a0e5c;
 }
 
 .blurred {
   backdrop-filter: blur(10px);
+  /* a: #5dca53; */
 }

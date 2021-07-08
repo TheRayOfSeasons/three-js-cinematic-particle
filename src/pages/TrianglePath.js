@@ -22,21 +22,21 @@ const createTrianglePath = (origin, target) => {
           new THREE.Vector3(size, -size, 0),
         ];
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const material = new THREE.MeshBasicMaterial({ color: 0x747474, wireframe: true });
-        const mesh = new THREE.LineSegments(geometry, material);
+        // const material = new THREE.MeshBasicMaterial({ color: 0x747474, wireframe: true });
+        // const mesh = new THREE.LineSegments(geometry, material);
 
         const pointsMat = new THREE.PointsMaterial({
           alphaMap: pointTexture,
           transparent: true,
           size: 12,
           sizeAttenuation: true,
-          color: '#24536d',
+          color: '#8367c7',
           blending: THREE.AdditiveBlending
         });
         const meshPoints = new THREE.Points(geometry, pointsMat);
 
         const meshGroup = new THREE.Group();
-        meshGroup.add(mesh);
+        // meshGroup.add(mesh);
         meshGroup.add(meshPoints);
         this.triangles.push(meshGroup);
         meshGroup.position.set(position.x, position.y, position.z);
@@ -59,7 +59,7 @@ const createTrianglePath = (origin, target) => {
 
         triangle.position.lerp(this.target, Math.atan2(5, distanceFromTarget));
         const newDistanceFromTarget = triangle.position.distanceTo(this.target);
-        if(newDistanceFromTarget < 150.0) {
+        if(newDistanceFromTarget < 110.0) {
           triangle.position.set(this.origin.x, this.origin.y, this.origin.z);
         }
       }
