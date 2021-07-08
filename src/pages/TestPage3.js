@@ -12,7 +12,7 @@ const RunningManAnimation = canvas => {
       this.renderer = CORE.createRenderer(canvas, canvasWidth, canvasHeight);
       this.scene = CORE.createScene();
       this.camera = CORE.createCamera(canvasWidth, canvasHeight);
-      this.camera.position.y = 100;
+      this.camera.position.y = 0;
       this.camera.position.z = 200;
 
       const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );

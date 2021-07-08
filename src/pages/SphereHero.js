@@ -107,6 +107,7 @@ const createSpherePoint = ({ renderTriangles=false }) => {
         blending: THREE.AdditiveBlending
       })
       this.innerSphere = new THREE.Points(this.innerSphereGeometry, innerPointsMaterial);
+      console.log(this.innerSphere);
       this.group.add(this.innerSphere);
 
       this.rotatingGroup.layers.enable(LAYERS.ENTIRE_SCENE);
