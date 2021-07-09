@@ -19,7 +19,7 @@ const createAnimatedSpline = () => {
       // ];
 
       const rawPoints = [
-        new THREE.Vector3(-4, 0, 0),
+        new THREE.Vector3(-9, 0, 0),
         new THREE.Vector3(-3, 2, 0),
         new THREE.Vector3(0, 5, 0),
         new THREE.Vector3(3, -2, 5),

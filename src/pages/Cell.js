@@ -1,21 +1,21 @@
 import * as THREE from 'three';
 
 function fillWithPoints(geometry, count) {
-    
+
   var ray = new THREE.Ray()
-  
+
   var size = new THREE.Vector3();
   geometry.computeBoundingBox();
   let bbox = geometry.boundingBox;
-  
+
   let points = [];
-  
+
   var dir = new THREE.Vector3(1, 1, 1).normalize();
   for (let i = 0; i < count; i++) {
     let p = setRandomVector(bbox.min, bbox.max);
     points.push(p);
   }
-  
+
   function setRandomVector(min, max){
     let v = new THREE.Vector3(
       THREE.Math.randFloat(min.x, max.x),
@@ -25,12 +25,12 @@ function fillWithPoints(geometry, count) {
     if (!isInside(v)){return setRandomVector(min, max);}
     return v;
   }
-  
+
   function isInside(v){
-    
+
     ray.set(v, dir);
     let counter = 0;
-    
+
     let pos = geometry.attributes.position;
     let faces = pos.count / 3;
     let vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3();
@@ -41,12 +41,32 @@ function fillWithPoints(geometry, count) {
       vC.fromBufferAttribute(pos, i * 3 + 2);
       if (ray.intersectTriangle(vA, vB, vC)) counter++;
     }
-    
+
     return counter % 2 == 1;
   }
-  
+
   return new THREE.BufferGeometry().setFromPoints(points);
 }
+
+const oldShader = `
+  float rand(float n){return fract(sin(n) * 43758.5453123);}
+
+  float noise(float p)
+  {
+    float fl = floor(p);
+    float fc = fract(p);
+    return mix(rand(fl), rand(fl + 1.0), fc);
+  }
+
+  void main()
+  {
+    float initialSinWaveValue = abs(1.15 * sin(vLightFactor * 10.0));
+    float noiseResult = noise(initialSinWaveValue);
+    float mixStrength = clamp(initialSinWaveValue, 0.1, 0.9);
+    vec3 color = mix(uColor, uMaxColor, mixStrength);
+    gl_FragColor = vec4(color, 1.0);
+  }
+`
 
 const createAnimatedCell = () => {
   return {
@@ -72,7 +92,7 @@ const createAnimatedCell = () => {
         vertexShader: `
           attribute float lightFactor;
           attribute float vertexIndexId;
-          
+
           uniform float uAlphaT;
           uniform float uInterval;
           uniform float uLength;
@@ -82,6 +102,7 @@ const createAnimatedCell = () => {
 
           varying float vLightFactor;
           varying float vVertexIndexId;
+          varying vec2 vUv;
 
           void main()
           {
@@ -95,6 +116,7 @@ const createAnimatedCell = () => {
 
             vLightFactor = lightFactor;
             vVertexIndexId = vertexIndexId;
+            vUv = uv;
 
             vec4 mvPosition = modelViewMatrix * vec4(newPosition, 1.0);
             gl_PointSize = uSize * (uScale / length(mvPosition.xyz));
@@ -108,22 +130,41 @@ const createAnimatedCell = () => {
 
           varying float vLightFactor;
           varying float vVertexIndexId;
+          varying vec2 vUv;
 
-          float rand(float n){return fract(sin(n) * 43758.5453123);}
-
-          float noise(float p)
+          // noise
+          float Hash21(vec2 p)
           {
-            float fl = floor(p);
-            float fc = fract(p);
-            return mix(rand(fl), rand(fl + 1.0), fc);
+            p = fract(p * vec2(234.34, 435.345));
+            p += dot(p, p + 34.23);
+            return fract(p.x * p.y);
           }
 
           void main()
           {
-            float initialSinWaveValue = abs(1.15 * sin(vLightFactor * 10.0));
-            float noiseResult = noise(initialSinWaveValue);
-            float mixStrength = clamp(initialSinWaveValue, 0.1, 0.9);
-            vec3 color = mix(uColor, uMaxColor, mixStrength);
+            vec2 uv = vUv;
+            vec3 color = vec3(0);
+            uv += uTime * 0.02;
+            float zoom = 10.0;
+            vec2 gv = fract(uv * zoom) - 0.5;
+            // color.rg = gv;
+            // color += gv.x;
+
+            vec2 id = floor(vUv);
+            float randomNumber = Hash21(id);
+            if(randomNumber < 0.5)
+            {
+              gv.x *= -1.0;
+            }
+            float width = 0.1;
+            float mask = smoothstep(0.01, -0.01, abs(gv.x + gv.y) - width);
+            color += mask;
+
+            // if(gv.x > 0.48 || gv.y > 0.48)
+            // {
+            //   color = vec3(1, 0, 0);
+            // }
+
             gl_FragColor = vec4(color, 1.0);
           }
         `,
@@ -166,7 +207,7 @@ const createAnimatedCell = () => {
       const elapsedTime = this.clock.getElapsedTime();
       this.outerSphereShaderMaterial.uniforms.uTime.value = elapsedTime;
       this.outerSphereShaderMaterial.uniforms.uAlphaT.value += 1;
-      // this.group.rotation.y = elapsedTime * 0.1;
+      // this.group.rotation.y = elapsedTime * 0.5;
     }
   }
 }
