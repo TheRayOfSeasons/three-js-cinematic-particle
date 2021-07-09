@@ -148,7 +148,7 @@ const createSpherePoint = ({ renderTriangles=false }) => {
       }
 
       const pointCloudGeometry = BufferGeometryUtils.mergeBufferGeometries(pointCloudGeometries);
-      const pointCloudMaterial = new THREE.MeshLambertMaterial({ color: '#1c1546' });
+      const pointCloudMaterial = new THREE.MeshLambertMaterial({ color: '#9c5019' });
       const pointCloudHighRes = new THREE.Mesh(pointCloudGeometry, pointCloudMaterial);
       pointCloudHighRes.layers.enable(LAYERS.BLOOM_SCENE);
       this.rotatingGroup.add(pointCloudHighRes);

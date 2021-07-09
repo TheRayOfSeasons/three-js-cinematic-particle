@@ -237,8 +237,8 @@ export const TestPage2 = () => {
 
   useEffect(() => {
     if(canvasScene) {
-      // let bglines = AnimatedLinesAnimation(blurredCanvas.current);
-      // bglines.init();
+      let bglines = AnimatedLinesAnimation(blurredCanvas.current);
+      bglines.init();
     }
   }, [canvasScene]);
 
