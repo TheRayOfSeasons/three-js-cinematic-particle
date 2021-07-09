@@ -89,11 +89,10 @@ const createSpherePoint = ({ renderTriangles=false }) => {
       this.lineGeometry.clearGroups();
       this.lineGeometry.addGroup(0, Infinity, 0);
       this.lineGeometry.addGroup(0, Infinity, 1);
-      const lineMaterial = new THREE.MeshBasicMaterial({
+      const lineMaterial = new THREE.LineBasicMaterial({
         color: 0x747474,
         wireframe: true,
         transparent: true,
-        opacity: 0.1,
       });
       const lineMesh = new THREE.LineSegments(this.lineGeometry, [lineMaterial]);
       this.rotatingGroup.add(lineMesh);

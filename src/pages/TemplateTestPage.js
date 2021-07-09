@@ -14,6 +14,19 @@ const CoronaAnimation = canvas => {
       this.camera = CORE.createCamera(canvasWidth, canvasHeight);
       this.camera.position.z = 2;
 
+      const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+      hemiLight.position.set( 0, 200, 0 );
+      this.scene.add( hemiLight );
+
+      const dirLight = new THREE.DirectionalLight( 0xffffff );
+      dirLight.position.set( 0, 200, 100 );
+      dirLight.castShadow = true;
+      dirLight.shadow.camera.top = 180;
+      dirLight.shadow.camera.bottom = - 100;
+      dirLight.shadow.camera.left = - 120;
+      dirLight.shadow.camera.right = 120;
+      this.scene.add( dirLight );
+
       const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
       const material = new THREE.MeshNormalMaterial();
       const mesh = new THREE.Mesh(geometry, material);
