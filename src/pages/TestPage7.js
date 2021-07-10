@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 import { CORE } from './Core';
 import { createAnimatedCell } from './Cell';
@@ -35,10 +36,14 @@ const CellAnimation = canvas => {
       console.log('Initialization done!');
       this.renderer.setAnimationLoop(this.update());
       console.log('Animation started!');
+
+      this.controls = new OrbitControls(this.camera, canvas);
+      this.controls.enableDamping = true;
     },
     update: function() {
       console.log('Begining animation...');
       return time => {
+        this.controls.update();
         this.cell.update(time);
         this.renderer.render(this.scene, this.camera);
       }
