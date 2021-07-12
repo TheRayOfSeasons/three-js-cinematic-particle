@@ -26,11 +26,14 @@ const createInstancedTest = (scene, camera) => {
 
       this.dummy = new THREE.Object3D();
       let i = 0;
-      const offset = (this.parameters.countamount - 1) / 2;
       for ( let x = 0; x < this.parameters.count; x ++ ) {
         for ( let y = 0; y < this.parameters.count; y ++ ) {
           for ( let z = 0; z < this.parameters.count; z ++ ) {
-            this.dummy.position.set( offset - x, offset - y, offset - z );
+            this.dummy.position.set(
+              100 * (0.5 - Math.random()),
+              100 * (0.5 - Math.random()),
+              100 * (0.5 - Math.random())
+            );
             this.dummy.updateMatrix();
             this.instancedMesh.setMatrixAt( i ++, this.dummy.matrix );
           }
@@ -46,7 +49,7 @@ const createInstancedTest = (scene, camera) => {
         // this.instancedMesh.getMatrixAt(0, this.matrix);
         // this.position.x += 0.01;
         // this.matrix.setPosition(this.position);
-        this.instancedMesh.setMatrixAt(0, this.matrix);
+        this.instancedMesh.setMatrixAt(0, this.dummy.matrix);
         this.instancedMesh.instanceMatrix.needsUpdate = true;
       }
     }

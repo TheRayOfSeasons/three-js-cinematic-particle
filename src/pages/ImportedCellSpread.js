@@ -20,7 +20,8 @@ const createAnimatedImportedCellSpread = (scene, camera) => {
     scene,
     camera,
     parameters: {
-      count: 2000,
+      count: 200,
+      maxCount: 1000,
       groupsAtATime: 1,
       distance: {
         max: 300,
@@ -32,9 +33,7 @@ const createAnimatedImportedCellSpread = (scene, camera) => {
     init: function () {
       this.rotatingGroup = new THREE.Group();
 
-      const textureLoader = new THREE.TextureLoader();
       const loader = new GLTFLoader();
-      const uvMap = textureLoader.load('/models/cell_normal_map.jpeg');
 
       this.instancedMeshes = [];
       this.dummy = new THREE.Object3D();
@@ -51,46 +50,34 @@ const createAnimatedImportedCellSpread = (scene, camera) => {
           return;
         }
 
-
-        const geometries = [];
-        for (let i = 0; i < this.parameters.count; i++) {
-          const span = i % 4 == 0 ? this.parameters.distance.max : this.parameters.distance.min;
-          const x = i == 0 ? 0 : span * (0.5 - Math.random());
-          const y = i == 0 ? 0 : span * (0.5 - Math.random());
-          const z = i == 0 ? 0 : span * (0.5 - Math.random());
-          for (let j = 0; j < children.length; j++) {
-            const singleGeometry = children[j].geometry.clone();
-            singleGeometry.translate(x, y, z);
-            if (Array.isArray(geometries[j]))
-              geometries[j].push(singleGeometry);
-            else
-              geometries[j] = [singleGeometry];
-          }
-        }
-
-        this.meshes = [];
-        for (let j = 0; j < children.length; j++) {
-          const geometry = BufferGeometryUtils.mergeBufferGeometries(geometries[j]);
-          const material = children[j].material;
+        for(const child of children) {
+          const geometry = child.geometry;
+          const material = child.material;
           material.transparent = true;
           material.opacity = 0.99;
           material.blending = THREE.AdditiveBlending;
-          this.meshes.push({ geometry, material });
+          const instancedMesh = new THREE.InstancedMesh(geometry, material, this.parameters.maxCount);
+          instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+          this.group.add(instancedMesh);
+          this.instancedMeshes.push(instancedMesh);
         }
 
-        this.activeMeshes = [];
-        this.newPositionZ = 0;
-        for(let i = 0; i < this.parameters.groupsAtATime; i++) {
-          const z = i * this.parameters.distance.max;
-          this.newPositionZ = z;
-          for(const { geometry, material } of this.meshes) {
-            const mesh = new THREE.Mesh(geometry, material);
-            this.activeMeshes.push(mesh);
-            mesh.position.z = z;
-            this.group.add(mesh);
+        let i = 0;
+        for(let x = 0; x < this.parameters.count; x++) {
+          for(let y = 0; y < this.parameters.count; y++) {
+            for(let z = 0; z < this.parameters.count; z++) {
+              this.dummy.position.set(
+                100 * (0.5 - Math.random()),
+                100 * (0.5 - Math.random()),
+                100 * (0.5 - Math.random())
+              );
+              this.dummy.updateMatrix();
+              for(const instancedMesh of this.instancedMeshes) {
+                instancedMesh.setMatrixAt(i++, this.dummy.matrix);
+              }
+            }
           }
         }
-        this.toRemove = this.activeMeshes[0];
       });
 
     },
@@ -101,31 +88,11 @@ const createAnimatedImportedCellSpread = (scene, camera) => {
         return;
 
       this.group.rotation.y = (elapsedTime * 0.1);
-      if(this.activeMeshes.length > 0) {
-        for(const activeMesh of this.activeMeshes) {
-          // activeMesh.position.z = (elapsedTime * 10);
+
+      if(this.instancedMeshes && this.dummy) {
+        for(const instancedMesh of this.instancedMeshes) {
+          instancedMesh.setMatrixAt(0, this.dummy.matrix);
         }
-
-        // const distance = this.toRemove.position.distanceTo(this.camera.position);
-        // if(distance > 20) {
-        //   // dispose no longer visible object
-        //   this.toRemove.geometry.dispose();
-        //   this.toRemove.material.dispose();
-        //   this.scene.remove(this.toRemove);
-        //   this.toRemove = this.activeMeshes[1];
-        //   this.activeMeshes.shift();
-
-        //   // create new potentially visible object
-        //   // this.newPositionZ += this.parameters.distance.max;
-        //   // if(this.mayadd) {
-        //   for(const { geometry, material } of this.meshes) {
-        //     const mesh = new THREE.Mesh(geometry, material);
-        //     this.activeMeshes.push(mesh);
-        //     mesh.position.z = 0;
-        //     this.scene.add(mesh);
-        //   }
-        //   // }
-        // }
       }
     }
   }

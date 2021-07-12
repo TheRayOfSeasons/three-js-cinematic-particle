@@ -8,7 +8,10 @@ import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass';
 import { CORE } from './Core';
 import { createAnimatedImportedCell } from './ImportedCell';
 import { createAnimatedImportedCellSpread } from './ImportedCellSpread';
+import Stats from 'stats-js';
 
+
+const stats = new Stats();
 
 const CellAnimation = canvas => {
   return {
@@ -72,6 +75,7 @@ const CellAnimation = canvas => {
     update: function() {
       console.log('Begining animation...');
       return time => {
+        stats.begin();
         this.controls.update();
         this.cell.update(time);
         this.composer.render();
@@ -81,6 +85,7 @@ const CellAnimation = canvas => {
 
 				// this.camera.lookAt( this.scene.position );
         // this.renderer.render(this.scene, this.camera);
+        stats.end();
       }
     }
   }
@@ -94,6 +99,7 @@ export const TestPage8 = () => {
     if(canvasScene) {
       let animation = CellAnimation(canvasScene.current);
       animation.init();
+      document.getElementById('test-stats').appendChild(stats.dom);
     }
   }, [canvasScene]);
 
