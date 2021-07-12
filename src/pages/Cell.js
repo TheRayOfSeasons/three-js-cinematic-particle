@@ -268,17 +268,20 @@ const createAnimatedCell = () => {
       const cellTextureMap = textureLoader.load('/2d-cnoise.png');
 
       this.outerSphereShaderMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-          uTime: { value: 0.0 },
-          uColor: { value: new THREE.Color('#65ca35') },
-          uMaxColor: { value: new THREE.Color('#2e740e') },
-          uSize: { value: 0.075 },
-          uScale: { value: window.innerHeight / 2 },
-          uInterval: { value: 10.0 },
-          uLength: { value: 10.0 },
-          uAlphaT: { value: 1.0 },
-          uResolution: { value: new THREE.Vector3() },
-        },
+        uniforms: THREE.UniformsUtils.merge([
+          THREE.UniformsLib.lights,
+          {
+            uTime: { value: 0.0 },
+            uColor: { value: new THREE.Color('#65ca35') },
+            uMaxColor: { value: new THREE.Color('#2e740e') },
+            uSize: { value: 0.075 },
+            uScale: { value: window.innerHeight / 2 },
+            uInterval: { value: 10.0 },
+            uLength: { value: 10.0 },
+            uAlphaT: { value: 1.0 },
+            uResolution: { value: new THREE.Vector3() },
+          }
+        ]),
         vertexShader: `
           attribute float lightFactor;
           attribute float vertexIndexId;
@@ -293,22 +296,26 @@ const createAnimatedCell = () => {
           varying float vLightFactor;
           varying float vVertexIndexId;
           varying vec2 vUv;
+          varying vec3 vPos;
+          varying vec3 vNormal;
 
           void main()
           {
-            // vec3 newPosition = vec3(
-            //   position.x + (sin((uAlphaT + vertexIndexId) / uInterval) * (0.005 * uLength)),
-            //   position.y + (sin((uAlphaT + vertexIndexId) / uInterval) * (0.005 * uLength)),
-            //   position.z + (sin((uAlphaT + vertexIndexId) / uInterval) * (0.005 * uLength))
-            // );
+            vec3 newPosition = vec3(
+              position.x + (sin((uAlphaT + vertexIndexId) / uInterval) * (0.005 * uLength)),
+              position.y + (sin((uAlphaT + vertexIndexId) / uInterval) * (0.005 * uLength)),
+              position.z + (sin((uAlphaT + vertexIndexId) / uInterval) * (0.005 * uLength))
+            );
 
-            vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+            vec4 modelPosition = modelMatrix * vec4(newPosition, 1.0);
 
             vLightFactor = lightFactor;
             vVertexIndexId = vertexIndexId;
             vUv = uv;
+            vPos = (modelMatrix * vec4(position, 1.0 )).xyz;
+            vNormal = normalMatrix * normal;
 
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            vec4 mvPosition = modelViewMatrix * vec4(newPosition, 1.0);
             gl_PointSize = uSize * (uScale / length(mvPosition.xyz));
             gl_Position = projectionMatrix * viewMatrix * modelMatrix * modelPosition;
           }
@@ -324,6 +331,20 @@ const createAnimatedCell = () => {
           varying float vLightFactor;
           varying float vVertexIndexId;
           varying vec2 vUv;
+          varying vec3 vPos;
+          varying vec3 vNormal;
+
+          #if NUM_DIR_LIGHTS > 0
+            struct DirectionalLight {
+              vec3 direction;
+              vec3 color;
+              int shadow;
+              float shadowBias;
+              float shadowRadius;
+              vec2 shadowMapSize;
+            };
+            uniform DirectionalLight directionalLights[ NUM_DIR_LIGHTS ];
+          #endif
 
           vec2 random2(vec2 p)
           {
@@ -381,6 +402,9 @@ const createAnimatedCell = () => {
             // Show isolines
             // color -= step(.7,abs(sin(27.0*m_dist)))*.5;
 
+            // lights
+            float r = directionalLights[0].color.r;
+
             // Output to screen
             fragColor = vec4(color, 1.0);
           }
@@ -390,6 +414,7 @@ const createAnimatedCell = () => {
             mainImage(gl_FragColor, gl_FragCoord.xy);
           }
         `,
+        lights: true,
         // blending: THREE.AdditiveBlending,
         // transparent: false,
         // alphaTest: true
@@ -429,7 +454,7 @@ const createAnimatedCell = () => {
     update: function(time) {
       const elapsedTime = this.clock.getElapsedTime();
       this.outerSphereShaderMaterial.uniforms.uTime.value = elapsedTime;
-      // this.outerSphereShaderMaterial.uniforms.uAlphaT.value += 1;
+      this.outerSphereShaderMaterial.uniforms.uAlphaT.value += 1;
       // this.group.rotation.y = elapsedTime * 0.5;
     }
   }
