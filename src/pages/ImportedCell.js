@@ -8,7 +8,9 @@ const createAnimatedImportedCell = () => {
     init: function() {
       this.rotatingGroup = new THREE.Group();
 
+      const textureLoader = new THREE.TextureLoader();
       const loader = new GLTFLoader();
+      const uvMap = textureLoader.load('/models/cell_normal_map.jpeg');
 
       this.cellShader = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
@@ -23,6 +25,7 @@ const createAnimatedImportedCell = () => {
             uLength: { value: 10.0 },
             uAlphaT: { value: 1.0 },
             uResolution: { value: new THREE.Vector3() },
+            uUvMap: { value: uvMap }
           }
         ]),
         vertexShader: `
@@ -149,6 +152,7 @@ const createAnimatedImportedCell = () => {
             float r = directionalLights[0].color.r;
 
             // Output to screen
+            // fragColor = texture(uUvMap, vec4(color, 1.0));
             fragColor = vec4(color, 1.0);
           }
 
@@ -160,7 +164,7 @@ const createAnimatedImportedCell = () => {
         lights: true,
       });
 
-      loader.load('/models/cell3.glb', object => {
+      loader.load('/models/cell2.glb', object => {
         console.log(object);
         try {
           object.scene.traverse(child => {
@@ -170,7 +174,7 @@ const createAnimatedImportedCell = () => {
               child.geometry.clearGroups();
               child.geometry.addGroup(0, Infinity, 0);
               child.geometry.addGroup(0, Infinity, 1);
-              child.material = [this.cellShader];
+              child.material = [child.material];
             }
             this.rotatingGroup.add(child);
           });
