@@ -86,6 +86,7 @@ const NeuronAnimation = canvas => {
       console.log('Begining animation...');
       return time => {
         stats.begin();
+        // this.camera.position.z = (-time * 0.00025) + 1.5;
         this.controls.update();
         for(const neuron of this.neurons) {
           neuron.update(time);
