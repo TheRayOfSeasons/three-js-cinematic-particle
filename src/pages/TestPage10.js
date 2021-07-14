@@ -105,17 +105,25 @@ export const TestPage10 = () => {
     if(canvasScene) {
       let animation = NeuronAnimation(canvasScene.current);
       animation.init();
-      document.getElementById('test-stats').appendChild(stats.dom);
+      // document.getElementById('test-stats').appendChild(stats.dom);
     }
   }, [canvasScene]);
 
   return (
     <div className="hero-container">
       <div id="test-stats"></div>
-      <div class="dirty-white-background"></div>
+      {/* <div className="hero-content">
+        <div>
+          <h1>Test content</h1>
+        </div>
+      </div> */}
+      <div className="dirty-white-background"></div>
+      {/* <div className="orbit-controls-overlay"></div> */}
       <canvas ref={canvasScene} className="blurred" style={{
+        // position: 'absolute',
         width: '100vw',
         height: '100vh',
+        // zIndex: '1',
       }}>
       </canvas>
     </div>
