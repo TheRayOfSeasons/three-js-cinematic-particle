@@ -32,16 +32,15 @@ const PathedDNAAnimation = canvas => {
 
       this.objects = [
         (() => {
-          const pathedDNA = createPathedDNA();
+          const pathedDNA = createPathedDNA(canvas, this.camera);
           pathedDNA.init();
           this.scene.add(pathedDNA.group);
-          pathedDNA.group.rotation.z = -Math.PI * 0.15;
           return pathedDNA;
         })(),
       ]
 
-      this.controls = new OrbitControls(this.camera, canvas);
-      this.controls.enableDamping = true;
+      // this.controls = new OrbitControls(this.camera, canvas);
+      // this.controls.enableDamping = true;
 
       console.log('Initialization done!');
       this.renderer.setAnimationLoop(this.update());
@@ -50,7 +49,7 @@ const PathedDNAAnimation = canvas => {
     update: function() {
       console.log('Begining animation...');
       return time => {
-        this.controls.update();
+        // this.controls.update();
         for(const obj of this.objects) {
           obj.update(time);
         }
