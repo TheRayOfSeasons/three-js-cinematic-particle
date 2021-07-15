@@ -26,7 +26,7 @@ const createPathedDNA = (canvas, camera) => {
     parameters: {
       frameSpan: 100,
       speed: 0.05,
-      objectCountPerSpline: 50,
+      objectCountPerSpline: 100,
       reverse: false,
       static: false,
       interactions: {
@@ -57,8 +57,8 @@ const createPathedDNA = (canvas, camera) => {
         }),
       ];
       const geometries = [
-        new THREE.BoxBufferGeometry(0.25, 0.25, 0.25),
-        new THREE.SphereBufferGeometry(0.15, 8, 8)
+        new THREE.BoxBufferGeometry(0.15, 0.15, 0.15),
+        new THREE.SphereBufferGeometry(0.1, 8, 8)
       ];
 
       this.splines = [];

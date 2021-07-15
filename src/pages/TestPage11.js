@@ -37,6 +37,13 @@ const PathedDNAAnimation = canvas => {
           this.scene.add(pathedDNA.group);
           return pathedDNA;
         })(),
+        // (() => {
+        //   const pathedDNA = createPathedDNA(canvas, this.camera);
+        //   pathedDNA.init();
+        //   this.scene.add(pathedDNA.group);
+        //   pathedDNA.group.position.z = -10;
+        //   return pathedDNA;
+        // })(),
       ]
 
       // this.controls = new OrbitControls(this.camera, canvas);
