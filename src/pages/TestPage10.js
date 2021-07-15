@@ -32,14 +32,6 @@ const NeuronAnimation = canvas => {
       dirLight.shadow.camera.left = - 120;
       dirLight.shadow.camera.right = 120;
       this.scene.add( dirLight );
-
-      this.neuron1 = createAnimatedNeuron();
-      this.neuron1.init();
-      this.scene.add(this.neuron1.group);
-      this.neuron1.group.rotation.x = -Math.PI * 0.075;
-      this.neuron1.group.rotation.y = -Math.PI;
-      this.neuron1.group.rotation.z = -Math.PI * 0.05;
-      this.neuron1.group.position.x = 0.75;
       
       this.neurons = [
         (() => {
