@@ -29,6 +29,7 @@ const createPathedDNA = (canvas, camera) => {
       objectCountPerSpline: 100,
       reverse: false,
       static: false,
+      splinePointCount: 50,
       interactions: {
         ease: 0.005,
         affectedArea: 10
@@ -43,22 +44,22 @@ const createPathedDNA = (canvas, camera) => {
       ];
 
       const materials = [
-        new THREE.MeshStandardMaterial({
+        new THREE.MeshPhongMaterial({
           color: '#20d620',
-          metalness: 0.25,
-          roughness: 1,
+          specular: '#ffffff',
+          shininess: 100,
           emissiveIntensity: 1,
         }),
-        new THREE.MeshLambertMaterial({
+        new THREE.MeshPhongMaterial({
           color: '#2041d6',
-          metalness: 0.25,
-          roughness: 1,
+          specular: '#ffffff',
+          shininess: 100,
           emissiveIntensity: 1,
         }),
       ];
       const geometries = [
         new THREE.BoxBufferGeometry(0.15, 0.15, 0.15),
-        new THREE.SphereBufferGeometry(0.1, 8, 8)
+        new THREE.SphereBufferGeometry(0.1, 16, 16)
       ];
 
       this.splines = [];
@@ -69,7 +70,7 @@ const createPathedDNA = (canvas, camera) => {
         splineIndex++;
 
         const spline = new THREE.CatmullRomCurve3(splineVectors);
-        const points = spline.getPoints(50);
+        const points = spline.getPoints(this.parameters.splinePointCount);
 
         const localGroup = new THREE.Group();
         const objects = [];
@@ -105,6 +106,7 @@ const createPathedDNA = (canvas, camera) => {
           objects,
           group: localGroup,
           origin: points[0],
+          target: points[this.parameters.splinePointCount - 1]
         })
       }
       this.splines[1].splineObject.rotation.x = Math.PI * 0.75;
@@ -130,7 +132,7 @@ const createPathedDNA = (canvas, camera) => {
       }
       this.raycaster.ray.intersectPlane(this.raycastPlane, this.intersectPoint);
 
-      for(const { spline, splineObject, objects, origin } of this.splines) {
+      for(const { spline, splineObject, objects, origin, target } of this.splines) {
         for(const { mesh, index, initialPosition } of objects ) {
           const speed = this.parameters.reverse
             ? -this.parameters.speed
@@ -165,16 +167,23 @@ const createPathedDNA = (canvas, camera) => {
           );
           const force = -this.parameters.interactions.affectedArea / (distance || 1);
           if(mouseDistance < this.parameters.interactions.affectedArea) {
-            const theta = Math.atan2(initialPosition.y, initialPosition.x);
+            const theta = Math.atan(initialPosition.y, initialPosition.x);
             currentX += force * Math.cos(theta);
             currentY += force * Math.sin(theta);
             mesh.position.x += (initialPosition.x - currentX) * this.parameters.interactions.ease;
             mesh.position.y += (initialPosition.y - currentY) * this.parameters.interactions.ease;
           }
-          // mesh.position.x = newPos.x;
-          // mesh.position.y = newPos.y;
-          // mesh.position.z = newPos.z;
-          mesh.position.lerp(newPos, this.parameters.speed);
+
+          // An extra fix since using `limitReached` alone is not enough
+          const distanceFromTarget = mesh.position.distanceTo(target);
+          if(limitReached || distanceFromTarget < 1.0) {
+            mesh.position.x = newPos.x;
+            mesh.position.y = newPos.y;
+            mesh.position.z = newPos.z;
+          }
+          else {
+            mesh.position.lerp(newPos, this.parameters.speed);
+          }
 
           mesh.rotation.z = newRot.z;
           mesh.rotation.z = newRot.z;

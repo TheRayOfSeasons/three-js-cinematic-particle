@@ -12,6 +12,7 @@ import { TestPage8 } from './pages/TestPage8';
 import { TestPage9 } from './pages/TestPage9';
 import { TestPage10 } from './pages/TestPage10';
 import { TestPage11 } from './pages/TestPage11';
+import { TestPage12 } from './pages/TestPage12';
 
 export const Routers = () => (
   <Router>
@@ -27,5 +28,6 @@ export const Routers = () => (
     <TestPage9 path="/test-9/*" />
     <TestPage10 path="/test-10/*" />
     <TestPage11 path="/test-11/*" />
+    <TestPage12 path="/test-12/*" />
   </Router>
 );

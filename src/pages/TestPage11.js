@@ -43,10 +43,9 @@ const PathedDNAAnimation = canvas => {
         (() => {
           const ambientParticles = createAmbientMeshParticles({
             geometry: new THREE.SphereBufferGeometry(0.05, 8, 8),
-            material: new THREE.MeshStandardMaterial({
+            material: new THREE.MeshPhongMaterial({
               color: '#2041d6',
-              metalness: 0.25,
-              roughness: 1,
+              specular: '#ffffff',
               emissiveIntensity: 1,
             }),
           });
@@ -57,10 +56,9 @@ const PathedDNAAnimation = canvas => {
         (() => {
           const ambientParticles = createAmbientMeshParticles({
             geometry: new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
-            material: new THREE.MeshStandardMaterial({
+            material: new THREE.MeshPhongMaterial({
               color: '#20d620',
-              metalness: 0.25,
-              roughness: 1,
+              specular: '#ffffff',
               emissiveIntensity: 1,
             }),
           });
@@ -71,7 +69,7 @@ const PathedDNAAnimation = canvas => {
         (() => {
           const cameraPanner = createCameraPanner({
             camera: this.camera,
-            panLimit: 2,
+            panLimit: 1.75,
             easing: 0.03
           });
           cameraPanner.init();
