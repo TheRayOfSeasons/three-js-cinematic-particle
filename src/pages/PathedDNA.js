@@ -43,14 +43,14 @@ const createPathedDNA = (canvas, camera) => {
       ];
 
       const materials = [
-        new THREE.MeshLambertMaterial({
-          color: '#dbdbdb',
+        new THREE.MeshStandardMaterial({
+          color: '#20d620',
           metalness: 0.25,
           roughness: 1,
           emissiveIntensity: 1,
         }),
-        new THREE.MeshStandardMaterial({
-          color: '#20d620',
+        new THREE.MeshLambertMaterial({
+          color: '#2041d6',
           metalness: 0.25,
           roughness: 1,
           emissiveIntensity: 1,
@@ -65,7 +65,7 @@ const createPathedDNA = (canvas, camera) => {
       let splineIndex = 0;
       for(const splineVectors of this.splineVectorCollection) {
 
-        const objectMaterial = materials[splineIndex];
+        // const objectMaterial = materials[splineIndex];
         splineIndex++;
 
         const spline = new THREE.CatmullRomCurve3(splineVectors);
@@ -79,7 +79,8 @@ const createPathedDNA = (canvas, camera) => {
         for(let i = 0; i < objectPositions.length - 1; i++) {
           const vector = objectPositions[i];
           const geometry = geometries[i % geometries.length];
-          const mesh = new THREE.Mesh(geometry, objectMaterial);
+          const material = materials[i % materials.length];
+          const mesh = new THREE.Mesh(geometry, material);
           mesh.position.x = vector.x;
           mesh.position.y = vector.y;
           mesh.position.z = vector.z;
@@ -147,9 +148,8 @@ const createPathedDNA = (canvas, camera) => {
           const newPos = spline.getPoint(newPosIndex / this.parameters.frameSpan);
           const newRot = spline.getTangent(newPosIndex / this.parameters.frameSpan);
 
-          let currentX =  mesh.position.x;
-          let currentY =  mesh.position.y;
-          let currentZ =  mesh.position.z;
+          let currentX = mesh.position.x;
+          let currentY = mesh.position.y;
           let distanceX = initialPosition.x - mesh.position.x;
           let distanceY = initialPosition.y - mesh.position.y;
           const mouseDistance = getDistance(
@@ -170,15 +170,11 @@ const createPathedDNA = (canvas, camera) => {
             currentY += force * Math.sin(theta);
             mesh.position.x += (initialPosition.x - currentX) * this.parameters.interactions.ease;
             mesh.position.y += (initialPosition.y - currentY) * this.parameters.interactions.ease;
-            mesh.position.z += (initialPosition.z - currentZ) * this.parameters.interactions.ease;
-            mesh.position.lerp(newPos, this.parameters.speed);
           }
-          else {
-            // mesh.position.x = newPos.x;
-            // mesh.position.y = newPos.y;
-            // mesh.position.z = newPos.z;
-            mesh.position.lerp(newPos, this.parameters.speed);
-          }
+          // mesh.position.x = newPos.x;
+          // mesh.position.y = newPos.y;
+          // mesh.position.z = newPos.z;
+          mesh.position.lerp(newPos, this.parameters.speed);
 
           mesh.rotation.z = newRot.z;
           mesh.rotation.z = newRot.z;

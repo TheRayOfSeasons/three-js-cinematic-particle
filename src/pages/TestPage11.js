@@ -1,10 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import Stats from 'stats-js';
 
 import { CORE } from './Core';
 import { createPathedDNA } from './PathedDNA';
+import { createAmbientMeshParticles } from './AmbientMeshParticles';
+import { createCameraPanner } from './CameraPanner';
 
+const stats = new Stats();
 
 const PathedDNAAnimation = canvas => {
   return {
@@ -14,7 +17,7 @@ const PathedDNAAnimation = canvas => {
       this.renderer = CORE.createRenderer(canvas, canvasWidth, canvasHeight);
       this.scene = CORE.createScene();
       this.camera = CORE.createCamera(canvasWidth, canvasHeight);
-      this.camera.position.z = 6.5;
+      this.camera.position.z = 4.5;
 
       const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
       hemiLight.position.set( 0, 200, 0 );
@@ -37,17 +40,45 @@ const PathedDNAAnimation = canvas => {
           this.scene.add(pathedDNA.group);
           return pathedDNA;
         })(),
-        // (() => {
-        //   const pathedDNA = createPathedDNA(canvas, this.camera);
-        //   pathedDNA.init();
-        //   this.scene.add(pathedDNA.group);
-        //   pathedDNA.group.position.z = -10;
-        //   return pathedDNA;
-        // })(),
-      ]
-
-      // this.controls = new OrbitControls(this.camera, canvas);
-      // this.controls.enableDamping = true;
+        (() => {
+          const ambientParticles = createAmbientMeshParticles({
+            geometry: new THREE.SphereBufferGeometry(0.05, 8, 8),
+            material: new THREE.MeshStandardMaterial({
+              color: '#2041d6',
+              metalness: 0.25,
+              roughness: 1,
+              emissiveIntensity: 1,
+            }),
+          });
+          ambientParticles.init();
+          this.scene.add(ambientParticles.group);
+          return ambientParticles;
+        })(),
+        (() => {
+          const ambientParticles = createAmbientMeshParticles({
+            geometry: new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+            material: new THREE.MeshStandardMaterial({
+              color: '#20d620',
+              metalness: 0.25,
+              roughness: 1,
+              emissiveIntensity: 1,
+            }),
+          });
+          ambientParticles.init();
+          this.scene.add(ambientParticles.group);
+          return ambientParticles;
+        })(),
+        (() => {
+          const cameraPanner = createCameraPanner({
+            camera: this.camera,
+            panLimit: 2,
+            easing: 0.03
+          });
+          cameraPanner.init();
+          this.scene.add(cameraPanner.group);
+          return cameraPanner;
+        })(),
+      ];
 
       console.log('Initialization done!');
       this.renderer.setAnimationLoop(this.update());
@@ -56,11 +87,12 @@ const PathedDNAAnimation = canvas => {
     update: function() {
       console.log('Begining animation...');
       return time => {
-        // this.controls.update();
+        stats.begin();
         for(const obj of this.objects) {
           obj.update(time);
         }
         this.renderer.render(this.scene, this.camera);
+        stats.end();
       }
     }
   }

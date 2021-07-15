@@ -65,7 +65,7 @@ const NeuronAnimation = canvas => {
           neuron.group.position.y = 1.75;
           neuron.group.position.z = -3;
           return neuron;
-        })()
+        })(),
       ];
 
       console.log('Initialization done!');
