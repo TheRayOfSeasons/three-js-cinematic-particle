@@ -10,6 +10,7 @@ const stats = new Stats();
 
 const NeuronAnimation = canvas => {
   return {
+    canvas,
     init: function() {
       console.log('Begin initialization...');
       const { canvasWidth, canvasHeight } = CORE.getCanvasDimensions(canvas);
@@ -42,7 +43,7 @@ const NeuronAnimation = canvas => {
       
       this.neurons = [
         (() => {
-          const neuron = createAnimatedNeuron();
+          const neuron = createAnimatedNeuron(this.canvas);
           neuron.init();
           this.scene.add(neuron.group);
           neuron.group.rotation.x = -Math.PI * 0.075;
@@ -52,7 +53,7 @@ const NeuronAnimation = canvas => {
           return neuron;
         })(),
         (() => {
-          const neuron = createAnimatedNeuron();
+          const neuron = createAnimatedNeuron(this.canvas);
           neuron.init();
           this.scene.add(neuron.group);
           neuron.group.rotation.x = -Math.PI * 0.075;
@@ -62,7 +63,7 @@ const NeuronAnimation = canvas => {
           return neuron;
         })(),
         (() => {
-          const neuron = createAnimatedNeuron();
+          const neuron = createAnimatedNeuron(this.canvas);
           neuron.init();
           this.scene.add(neuron.group);
           neuron.group.rotation.x = -Math.PI * 0.075;
