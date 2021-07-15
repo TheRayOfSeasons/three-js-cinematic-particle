@@ -9,6 +9,8 @@ import { CORE } from './Core';
 import { createAnimatedImportedCell } from './ImportedCell';
 import { createAnimatedImportedCellSpread } from './ImportedCellSpread';
 import Stats from 'stats-js';
+import { createCameraPanner } from './CameraPanner';
+import { createInstancedCells } from './InstancedCells';
 
 
 const stats = new Stats();
@@ -21,13 +23,34 @@ const CellAnimation = canvas => {
       this.renderer = CORE.createRenderer(canvas, canvasWidth, canvasHeight);
       this.scene = CORE.createScene();
       this.camera = CORE.createCamera(canvasWidth, canvasHeight);
-      this.camera.position.z = 10;
+      this.camera.position.z = 70;
       this.camera.far = 5000;
       this.camera.updateProjectionMatrix();
 
-      this.cell = createAnimatedImportedCellSpread(this.scene, this.camera);
-      this.cell.init();
-      this.scene.add(this.cell.group);
+      this.objects = [
+        (() => {
+          const cells = createAnimatedImportedCellSpread(this.scene, this.camera);
+          cells.init();
+          this.scene.add(cells.group);
+          return cells;
+        })(),
+        // (() => {
+        //   const cells = createInstancedCells({ count: 500 });
+        //   cells.init();
+        //   this.scene.add(cells.group);
+        //   return cells;
+        // })(),
+        (() => {
+          const cameraPanner = createCameraPanner({
+            camera: this.camera,
+            panLimit: 20,
+            easing: 0.03
+          });
+          cameraPanner.init();
+          this.scene.add(cameraPanner.group);
+          return cameraPanner;
+        })(),
+      ];
 
       const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
       hemiLight.position.set( 0, 200, 0 );
@@ -46,8 +69,8 @@ const CellAnimation = canvas => {
       this.renderer.setAnimationLoop(this.update());
       console.log('Animation started!');
 
-      this.controls = new OrbitControls(this.camera, canvas);
-      this.controls.enableDamping = true;
+      // this.controls = new OrbitControls(this.camera, canvas);
+      // this.controls.enableDamping = true;
 
       // postprocessing
       this.composer = new EffectComposer(this.renderer);
@@ -63,28 +86,18 @@ const CellAnimation = canvas => {
         width: canvasWidth
       })
       this.composer.addPass(bokehPass);
-
-
-      // this.mousePosition = {x: 0, y: 0};
-      // window.addEventListener('mousemove', event => {
-      //   if ( event.isPrimary === false ) return;
-			// 	this.mousePosition.x = event.clientX - (window.innerWidth / 2);
-			// 	this.mousePosition.y = event.clientY - (window.innerHeight / 2);
-      // })
     },
     update: function() {
       console.log('Begining animation...');
       return time => {
         stats.begin();
-        this.controls.update();
-        this.cell.update(time);
-        this.composer.render();
+        // this.controls.update();
+        for(const object of this.objects) {
+          object.update(time);
+        }
+        // this.composer.render();
 
-        // this.camera.position.x += ( this.mousePosition.x - this.camera.position.x ) * 0.00036;
-				// this.camera.position.y += ( - ( this.mousePosition.y ) - this.camera.position.y ) * 0.00036;
-
-				// this.camera.lookAt( this.scene.position );
-        // this.renderer.render(this.scene, this.camera);
+        this.renderer.render(this.scene, this.camera);
         stats.end();
       }
     }
@@ -106,6 +119,7 @@ export const TestPage8 = () => {
   return (
     <div className="hero-container">
       <div id="test-stats"></div>
+      <div className="cell-background"></div>
       <canvas ref={canvasScene} className="blurred" style={{
         width: '100vw',
         height: '100vh',

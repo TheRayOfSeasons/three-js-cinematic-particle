@@ -39,7 +39,6 @@ const createCameraPanner = ({ camera, panLimit, easing }) => {
       this.easingPosition.position.lerp(newPosition, this.parameters.easing);
       this.camera.position.x = this.easingPosition.position.x;
       this.camera.position.y = this.easingPosition.position.y;
-      console.log(this.camera.position.x);
     }
   }
 }
