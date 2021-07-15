@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import Stats from 'stats-js';
 
 import { CORE } from './Core';
 import { createAnimatedNeuron } from './Neuron';
+import { createCameraPanner } from './CameraPanner';
 
 const stats = new Stats();
 
@@ -72,15 +72,19 @@ const NeuronAnimation = canvas => {
       this.renderer.setAnimationLoop(this.update());
       console.log('Animation started!');
 
-      this.controls = new OrbitControls(this.camera, canvas);
-      this.controls.enableDamping = true;
+      this.cameraPanner = createCameraPanner({
+        camera: this.camera,
+        panLimit: 0.4,
+        easing: 0.03
+      });
+      this.cameraPanner.init();
+      this.scene.add(this.cameraPanner.group);
     },
     update: function() {
       console.log('Begining animation...');
       return time => {
         stats.begin();
-        // this.camera.position.z = (-time * 0.00025) + 1.5;
-        this.controls.update();
+        this.cameraPanner.update(time);
         for(const neuron of this.neurons) {
           neuron.update(time);
         }
@@ -99,7 +103,7 @@ export const TestPage10 = () => {
     if(canvasScene) {
       let animation = NeuronAnimation(canvasScene.current);
       animation.init();
-      // document.getElementById('test-stats').appendChild(stats.dom);
+      document.getElementById('test-stats').appendChild(stats.dom);
     }
   }, [canvasScene]);
 
