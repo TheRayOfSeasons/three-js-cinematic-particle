@@ -19,11 +19,11 @@ const NeuronAnimation = canvas => {
       this.camera = CORE.createCamera(canvasWidth, canvasHeight);
       this.camera.position.z = 1;
 
-      const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+      const hemiLight = new THREE.HemisphereLight('#979797', '#444444');
       hemiLight.position.set( 100, 200, 0 );
       this.scene.add( hemiLight );
 
-      const dirLight = new THREE.DirectionalLight( 0xffffff );
+      const dirLight = new THREE.DirectionalLight('#979797');
       dirLight.intensity = 0.25;
       dirLight.position.set( 75, 200, 100 );
       dirLight.castShadow = true;

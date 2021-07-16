@@ -87,7 +87,7 @@ const createAnimatedNeuron = canvas => {
 
       this.meshes = [];
       this.shaders = [];
-      loader.load('/models/neuron-modded-highpoly.glb', object => {
+      loader.load('/models/neuron2-modded-recolored.glb', object => {
         object.scene.traverse(child => {
           if(child.isMesh) {
             // child.geometry.clearGroups();
@@ -179,10 +179,10 @@ const createAnimatedNeuron = canvas => {
             });
 
             console.log(child);
-            const newObject = new THREE.Mesh(child.geometry, shader);
-            this.shaders.push(shader);
-            this.meshes.push(newObject);
-            this.rotatingGroup.add(newObject);
+            // const newObject = new THREE.Mesh(child.geometry, shader);
+            // this.shaders.push(shader);
+            this.meshes.push(child);
+            this.rotatingGroup.add(child);
           }
         });
       });
