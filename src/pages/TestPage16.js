@@ -16,12 +16,12 @@ const CoronaAnimation = canvas => {
       this.camera = CORE.createCamera(canvasWidth, canvasHeight);
       this.camera.position.z = 10;
 
-      const hemiLight = new THREE.HemisphereLight('#979797', '#444444' );
+      const hemiLight = new THREE.HemisphereLight('#979797', '#444444');
       hemiLight.position.set( 0, 200, 0 );
       this.scene.add( hemiLight );
 
-      const dirLight = new THREE.DirectionalLight( '#979797' );
-      dirLight.position.set( 100, 200, 100 );
+      const dirLight = new THREE.DirectionalLight('#979797');
+      dirLight.position.set( 100, 100, 100 );
       dirLight.castShadow = true;
       dirLight.shadow.camera.top = 180;
       dirLight.shadow.camera.bottom = - 100;
