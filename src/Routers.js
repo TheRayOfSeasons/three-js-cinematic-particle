@@ -20,6 +20,8 @@ import { TestPage16 } from './pages/TestPage16';
 import { TestPage17 } from './pages/TestPage17';
 import { TestPage18 } from './pages/TestPage18';
 
+import { RipplingSphere } from './page-phase-2/RIpplingSphere';
+
 export const Routers = () => (
   <Router>
     <Home path="/*" />
@@ -41,5 +43,7 @@ export const Routers = () => (
     <TestPage16 path="/test-16/*" />
     <TestPage17 path="/test-17/*" />
     <TestPage18 path="/test-18/*" />
+
+    <RipplingSphere path="/ripple/*"/>
   </Router>
 );
