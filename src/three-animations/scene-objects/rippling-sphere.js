@@ -6,22 +6,23 @@ const createRipplingSphere = ({ camera }) => {
     group: new THREE.Group(),
     clock: new THREE.Clock(),
     parameters: {
-      debug: false,
+      debug: true,
       radius: 7,
       wave: {
-        amplitudeMultiplier: 5,
-        cycleMultiplier: 0.1,
+        amplitudeMultiplier: 10.0,
+        cycleMultiplier: 0.075,
       }
     },
     init: function() {
       this.subGroup = new THREE.Group();
 
-      this.geometry = new THREE.SphereBufferGeometry(this.parameters.radius, 128, 128);
+      this.geometry = new THREE.IcosahedronBufferGeometry(this.parameters.radius, 16);
+      // this.geometry = new THREE.SphereBufferGeometry(this.parameters.radius, 128, 128);
       const material = new THREE.MeshPhongMaterial({
         color: '#a9a9a9',
         emissive: '#919191',
         shininess: 100,
-        flatShading: true,
+        // flatShading: true,
       });
       const mesh = new THREE.Mesh(this.geometry, material);
       this.subGroup.add(mesh);
@@ -62,6 +63,7 @@ const createRipplingSphere = ({ camera }) => {
     update: function(time) {
       const elapsedTime = this.clock.getElapsedTime();
 
+      let vals;
       for(let i = 0; i < this.geometry.attributes.position.array.length; i++) {
         const i3 = i * 3;
         const xIndex = i3;
@@ -75,14 +77,28 @@ const createRipplingSphere = ({ camera }) => {
         this.reusables.vectors.position.set(x, y, z);
         this.reusables.sphericals.a.setFromCartesianCoords(x, y, z);
 
+        // get arcLength between intersectPoint and current vertex
+        const chordLength = this.reusables.vectors.intersectPoint.distanceTo(
+          this.reusables.vectors.position
+        );
+        //             theta
+        // arcLength = ----- * 2πr
+        //              360
+        const thetaOfChord = Math.cos(chordLength / this.parameters.radius) * (180 / Math.PI);
+        const arcLength = (thetaOfChord / 360) * 2 * Math.PI * this.parameters.radius;
+
         const amplitude = this.parameters.wave.amplitudeMultiplier;
         const cycleLength = this.parameters.wave.cycleMultiplier;
         const phi = this.reusables.sphericals.a.phi;
         const theta = this.reusables.sphericals.a.theta;
-        const phiMovement = Math.cos((elapsedTime + phi) * amplitude) * cycleLength;
-        const thetaMovement = Math.sin((elapsedTime + theta) * amplitude) * cycleLength;
+        
+        const movement = Math.cos((elapsedTime + arcLength) * amplitude) * cycleLength;
+        const radius = this.parameters.radius + (movement * 2);
 
-        const radius = this.parameters.radius - (phiMovement + thetaMovement);
+        // const phiMovement = Math.sin((elapsedTime + phi) * amplitude) * cycleLength;
+        // const thetaMovement = Math.sin((elapsedTime + theta) * amplitude) * cycleLength;
+        // const radius = this.parameters.radius - (phiMovement + thetaMovement);
+
         this.reusables.vectors.position.setFromSphericalCoords(radius, phi, theta);
 
         this.geometry.attributes.position.array[xIndex] = this.reusables.vectors.position.x;
@@ -90,6 +106,12 @@ const createRipplingSphere = ({ camera }) => {
         this.geometry.attributes.position.array[zIndex] = this.reusables.vectors.position.z;
       }
       this.geometry.attributes.position.needsUpdate = true;
+
+      if(this.showVal) {
+        console.log(vals)
+      }
+
+      this.showVal = false;
     }
   }
 }

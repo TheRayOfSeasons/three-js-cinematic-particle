@@ -1,10 +1,9 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 import { CORE } from '../utils/core';
-import { createRipplingSphere } from '../scene-objects/rippling-sphere';
+import { createPoolRipple } from '../scene-objects/pool-ripple';
 
-const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
+const PoolRippleAnimation = ({ canvas, gui, guiAPI }) => {
   return {
     gui,
     guiAPI,
@@ -55,24 +54,20 @@ const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
 
       this.objects = [
         (() => {
-          const ripplingSphere = createRipplingSphere({ camera: this.camera });
-          ripplingSphere.init();
-          this.scene.add(ripplingSphere.group)
-          return ripplingSphere;
+          const ripple = createPoolRipple({ camera: this.camera });
+          ripple.init();
+          this.scene.add(ripple.group)
+          return ripple;
         })(),
       ];
 
       console.log('Initialization done!');
       this.renderer.setAnimationLoop(this.update());
       console.log('Animation started!');
-
-      this.controls = new OrbitControls(this.camera, canvas);
-      this.controls.enableDamping = true;
     },
     update: function() {
       console.log('Begining animation...');
       return time => {
-        this.controls.update();
         for(const object of this.objects) {
           object.update(time);
         }
@@ -82,4 +77,4 @@ const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
   }
 }
 
-export { RipplingSphereAnimation }
+export { PoolRippleAnimation }
