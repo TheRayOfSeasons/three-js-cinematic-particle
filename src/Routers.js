@@ -22,6 +22,8 @@ import { TestPage18 } from './pages/TestPage18';
 
 import { RipplingSphere } from './page-phase-2/RipplingSphere';
 import { PoolRipple } from './page-phase-2/PoolRipple';
+import { CollidingObjects } from './page-phase-2/CollidingObjects';
+import { InstancedCollidingObjects } from './page-phase-2/InstancedCollidingObjects';
 
 export const Routers = () => (
   <Router>
@@ -47,5 +49,7 @@ export const Routers = () => (
 
     <RipplingSphere path="/ripple/*" />
     <PoolRipple path="/pool-ripple/*" />
+    <CollidingObjects path="/collision/*" />
+    <InstancedCollidingObjects path="/instanced-collisions/*" />
   </Router>
 );
