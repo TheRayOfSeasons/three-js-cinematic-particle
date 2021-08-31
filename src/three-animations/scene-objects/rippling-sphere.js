@@ -25,7 +25,7 @@ const createRipplingSphere = ({ camera }) => {
     group: new THREE.Group(),
     clock: new THREE.Clock(),
     parameters: {
-      debug: false,
+      debug: true,
       radius: 7,
       wave: {
         amplitudeMultiplier: 5.0,
@@ -64,17 +64,17 @@ const createRipplingSphere = ({ camera }) => {
       );
 
       if(this.parameters.debug) {
-        const box = new THREE.Mesh(
+        this.debugBox = new THREE.Mesh(
           new THREE.BoxBufferGeometry(1, 1, 1),
           new THREE.MeshNormalMaterial()
         );
-        box.position.set(
+        this.debugBox.position.set(
           this.reusables.vectors.intersectPoint.x,
           this.reusables.vectors.intersectPoint.y,
           this.reusables.vectors.intersectPoint.z
         );
-        box.lookAt(new THREE.Vector3());
-        this.group.add(box);
+        this.debugBox.lookAt(new THREE.Vector3());
+        this.group.add(this.debugBox);
       }
 
       this.showVal = true;
@@ -91,11 +91,33 @@ const createRipplingSphere = ({ camera }) => {
           -Math.PI * 0.75,
           Math.PI * 0.0
         )}),
-      ]
+      ];
 
+      this.mouseRipple = createRipple({ origin: new THREE.Vector3().setFromCylindricalCoords(
+        this.parameters.radius,
+        0,
+        0
+      )});
+
+      this.mousePosition = new THREE.Vector2();
+      this.raycaster = new THREE.Raycaster();
+      this.raycastSphere = new THREE.Sphere(new THREE.Vector3(), this.parameters.radius);
+      this.intersectPoint = new THREE.Vector3();
+      this.group.add(this.easingPosition);
+      window.addEventListener('mousemove', event => {
+        this.mousePosition.x = (event.clientX / window.innerWidth) * 2 - 1;
+        this.mousePosition.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        this.raycaster.setFromCamera(this.mousePosition, this.camera);
+      });
     },
     update: function(time) {
       const elapsedTime = this.clock.getElapsedTime();
+      this.raycaster.ray.intersectSphere(this.raycastSphere, this.intersectPoint);
+
+      if(this.parameters.debug) {
+        this.debugBox.position.copy(this.intersectPoint);
+        this.debugBox.lookAt(new THREE.Vector3());
+      }
 
       let vals;
       for(let i = 0; i < this.geometry.attributes.position.array.length; i++) {
@@ -137,6 +159,13 @@ const createRipplingSphere = ({ camera }) => {
             cycleLength: this.parameters.wave.cycleMultiplier
           });
         }
+        this.mouseRipple.origin.copy(this.intersectPoint);
+        movement += this.mouseRipple.getUpdatedMovement(elapsedTime, {
+          vertexPosition: new THREE.Vector3(x, y, z),
+          midRadius: this.parameters.radius,
+          amplitude: this.parameters.wave.amplitudeMultiplier + 10,
+          cycleLength: this.parameters.wave.cycleMultiplier + 0.5
+        });
         const radius = this.parameters.radius + movement;
         const phi = this.reusables.sphericals.a.phi;
         const theta = this.reusables.sphericals.a.theta;
