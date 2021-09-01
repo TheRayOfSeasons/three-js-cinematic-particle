@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 import { CORE } from '../utils/core';
 import { createRipplingSphere } from '../scene-objects/rippling-sphere';
+import { createShaderRipplingSphere } from '../scene-objects/shader-rippling-sphere';
 
 const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
   return {
@@ -55,7 +56,7 @@ const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
 
       this.objects = [
         (() => {
-          const ripplingSphere = createRipplingSphere({ camera: this.camera });
+          const ripplingSphere = createShaderRipplingSphere({ camera: this.camera });
           ripplingSphere.init();
           this.scene.add(ripplingSphere.group)
           return ripplingSphere;
