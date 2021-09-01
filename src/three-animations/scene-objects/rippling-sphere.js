@@ -7,7 +7,7 @@ import * as THREE from 'three';
 const createRipple = ({ origin }) => {
   return {
     origin,
-    getUpdatedMovement: function(elapsedTime, { vertexPosition, midRadius, amplitude, cycleLength }) {
+    getUpdatedMovement: function(elapsedTime, { vertexPosition, midRadius, frequency, amplitude }) {
       const chordLength = this.origin.distanceTo(vertexPosition);
       const chordAngle = Math.cos(chordLength / midRadius) * (180 / Math.PI);
       const circumference = 2 * Math.PI * midRadius;
@@ -15,9 +15,8 @@ const createRipple = ({ origin }) => {
       const arcLength = (chordAngle / 360) * circumference;
 
       const offset = arcLength / halfCircumference;
-      const cycle = cycleLength * offset;
       // todo: amplitude here is actually frequency
-      const movement = Math.sin((elapsedTime + arcLength) * amplitude) * cycle;
+      const movement = Math.sin((elapsedTime + arcLength) * frequency) * (amplitude * offset);
       return movement;
     }
   }
@@ -43,7 +42,7 @@ const createRipplingSphere = ({ camera }) => {
       this.geometry = new THREE.IcosahedronBufferGeometry(this.parameters.radius, 18);
       // this.geometry = new THREE.SphereBufferGeometry(this.parameters.radius, 128, 128);
       const material = new THREE.MeshPhongMaterial({
-        color: '#a9a9a9',
+        color: '#949494',
         emissive: '#919191',
         shininess: 100,
         // flatShading: true,
@@ -96,6 +95,11 @@ const createRipplingSphere = ({ camera }) => {
           -Math.PI * 0.75,
           Math.PI * 0.0
         )}),
+        createRipple({ origin: new THREE.Vector3().setFromSphericalCoords(
+          this.parameters.radius,
+          -Math.PI * 0.25,
+          Math.PI * 0.0
+        )}),
       ];
 
       this.mouseRipple = createRipple({ origin: new THREE.Vector3().setFromCylindricalCoords(
@@ -114,6 +118,16 @@ const createRipplingSphere = ({ camera }) => {
         this.mousePosition.y = -(event.clientY / window.innerHeight) * 2 + 1;
         this.raycaster.setFromCamera(this.mousePosition, this.camera);
       });
+
+      setInterval(() => {
+        for(let i = 0; i < this.ripples.length; i++) {
+          this.ripples[i].origin.setFromSphericalCoords(
+            this.parameters.radius,
+            (Math.PI * 2) * Math.random(),
+            (Math.PI * 2) * Math.random(),
+          );
+        }
+      }, 5000);
     },
     update: function(time) {
       const elapsedTime = this.clock.getElapsedTime();
@@ -160,17 +174,18 @@ const createRipplingSphere = ({ camera }) => {
           movement -= ripple.getUpdatedMovement(elapsedTime * 0.5, {
             vertexPosition: new THREE.Vector3(x, y, z),
             midRadius: this.parameters.radius,
-            amplitude: 10,
-            cycleLength: 2
+            frequency: 5,
+            amplitude: 5
           });
         }
         this.mouseRipple.origin.copy(this.intersectPoint);
         movement -= this.mouseRipple.getUpdatedMovement(elapsedTime * 0.5, {
           vertexPosition: new THREE.Vector3(x, y, z),
           midRadius: this.parameters.radius,
-          amplitude: 10,
-          cycleLength: 5.5
+          frequency: 5,
+          amplitude: 15
         });
+        movement /= (this.ripples.length + 1);
         const radius = this.parameters.radius + movement;
         const phi = this.reusables.sphericals.a.phi;
         const theta = this.reusables.sphericals.a.theta;

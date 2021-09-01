@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 import { CORE } from '../utils/core';
 import { createPoolRipple } from '../scene-objects/pool-ripple';
+import { createShaderPoolRipple } from '../scene-objects/shader-pool-ripple';
 
 const PoolRippleAnimation = ({ canvas, gui, guiAPI }) => {
   return {
@@ -54,12 +56,15 @@ const PoolRippleAnimation = ({ canvas, gui, guiAPI }) => {
 
       this.objects = [
         (() => {
-          const ripple = createPoolRipple({ camera: this.camera });
+          const ripple = createShaderPoolRipple({ camera: this.camera });
           ripple.init();
           this.scene.add(ripple.group)
           return ripple;
         })(),
       ];
+
+      this.controls = new OrbitControls(this.camera, canvas);
+      this.controls.enableDamping = true;
 
       console.log('Initialization done!');
       this.renderer.setAnimationLoop(this.update());
@@ -68,6 +73,7 @@ const PoolRippleAnimation = ({ canvas, gui, guiAPI }) => {
     update: function() {
       console.log('Begining animation...');
       return time => {
+        this.controls.update();
         for(const object of this.objects) {
           object.update(time);
         }
