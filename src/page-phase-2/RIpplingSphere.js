@@ -21,11 +21,19 @@ export const RipplingSphere = () => {
       gui,
       guiAPI: {
         // lighting
-        skyColor: '#c0c0c0',
+        skyColor: '#ffffff',
         groundColor: '#383838',
         directionalLight: '#ffffff',
         enableAmbientLight: true,
-        enableDirectionalLight: false,
+        enableDirectionalLight: true,
+        ambientLightIntensity: 0.8,
+        ambientLightX: 0,
+        ambientLightY: 200,
+        ambientLightZ: 0,
+        directionalLightIntensity: 0.8,
+        dirLightX: 100,
+        dirLightY: 0,
+        dirLightZ: 260,
       }
     });
   }, [animationCanvas]);
