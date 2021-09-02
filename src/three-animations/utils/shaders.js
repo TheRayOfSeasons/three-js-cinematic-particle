@@ -355,8 +355,8 @@ export const ShaderUtils = {
 
 export const fractals = () => `
 const float pi2 = radians(360.);
-const float ripple = 1.5;
-const float scale = 1.75;
+const float ripple = 0.001;
+const float scale = 2.0;
 const float balance = 6.0;
 const float speed = 0.2;
 

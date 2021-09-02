@@ -11,7 +11,7 @@ const createShaderRipplingSphere = ({ camera }) => {
     },
     init: function() {
       // this.geometry = new THREE.IcosahedronBufferGeometry(this.parameters.radius, 100);
-      this.geometry = new THREE.SphereBufferGeometry(this.parameters.radius, 640, 640);
+      this.geometry = new THREE.SphereBufferGeometry(this.parameters.radius, 768, 768);
 
       // this.material = new THREE.ShaderMaterial({
       //   uniforms: {
@@ -147,7 +147,7 @@ const createShaderRipplingSphere = ({ camera }) => {
           ${shader.vertexShader.replace('}', `
             vec4 modelPosition = modelMatrix * vec4(position, 1.0);
 
-            float pattern = getFractalPattern(uv * 4.0);
+            float pattern = getFractalPattern(uv * 7.0);
 
             Spherical spherical = cartesianToSpherical(modelPosition.xyz);
             spherical.radius += pattern * 0.5;
