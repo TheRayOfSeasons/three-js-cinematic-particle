@@ -13,7 +13,7 @@ const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
       console.log('Begin initialization...');
       const { canvasWidth, canvasHeight } = CORE.getCanvasDimensions(canvas);
       this.renderer = CORE.createRenderer(canvas, canvasWidth, canvasHeight);
-      this.renderer.setClearColor(0xe7e7e7, 1.0);
+      this.renderer.setClearColor(0xbebebe, 1.0);
       this.scene = CORE.createScene();
       this.camera = CORE.createCamera(canvasWidth, canvasHeight);
       this.camera.position.z = 18;
