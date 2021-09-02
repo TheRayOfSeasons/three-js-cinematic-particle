@@ -18,6 +18,10 @@ const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
       this.camera = CORE.createCamera(canvasWidth, canvasHeight);
       this.camera.position.z = 18;
 
+      // const ambientLight = new THREE.AmbientLight('#3d3d3d', 1);
+      // ambientLight.position.set(0, 200, 0);
+      // this.scene.add(ambientLight);
+
       const hemiLight = new THREE.HemisphereLight('#c0c0c0', '#383838');
       hemiLight.position.set(0, 200, 0);
       this.scene.add(hemiLight);
@@ -54,9 +58,10 @@ const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
         hemiLight.visible = this.guiAPI.enableAmbientLight;
       });
 
-      hemiLight.intensity = this.guiAPI.enableAmbientLight;
+      hemiLight.intensity = this.guiAPI.ambientLightIntensity;
       lightFolder.add(this.guiAPI, 'ambientLightIntensity', 0.0, 10.0).onChange(() => {
         hemiLight.intensity = this.guiAPI.ambientLightIntensity;
+        console.log(hemiLight.intensity);
       });
 
       dirLight.visible = this.guiAPI.enableDirectionalLight;

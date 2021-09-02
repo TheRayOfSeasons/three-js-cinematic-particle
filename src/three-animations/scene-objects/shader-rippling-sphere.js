@@ -105,9 +105,13 @@ const createShaderRipplingSphere = ({ camera }) => {
       this.material.onBeforeCompile = shader => {
         shader.uniforms.uTime = { value: 0.0 };
         shader.uniforms.uMidRadius = { value: this.parameters.radius };
+        shader.uniforms.uSurfaceColor = { value: new THREE.Color('#a9a9a9')  };
+        shader.uniforms.uDepthColor = { value: new THREE.Color('#8a8a8a') };
         shader.vertexShader = `
           uniform float uTime;
           uniform float uMidRadius;
+
+          varying float vPattern;
 
           struct Spherical
           {
@@ -143,7 +147,7 @@ const createShaderRipplingSphere = ({ camera }) => {
           ${shader.vertexShader.replace('}', `
             vec4 modelPosition = modelMatrix * vec4(position, 1.0);
 
-            float pattern = getFractalPattern(uv * 3.0);
+            float pattern = getFractalPattern(uv * 4.0);
 
             Spherical spherical = cartesianToSpherical(modelPosition.xyz);
             spherical.radius += pattern * 0.5;
@@ -153,10 +157,26 @@ const createShaderRipplingSphere = ({ camera }) => {
             modelPosition.y = updatedPosition.y;
             modelPosition.z = updatedPosition.z;
 
+            vPattern = pattern;
+
             vec4 viewPosition = viewMatrix * modelPosition;
             vec4 projectedPosition = projectionMatrix * viewPosition;
             gl_Position = projectedPosition;
           }`)}
+        `;
+        shader.fragmentShader = `
+          uniform vec3 uSurfaceColor;
+          uniform vec3 uDepthColor;
+
+          varying float vPattern;
+
+          ${shader.fragmentShader.replace(
+            'vec4 diffuseColor = vec4( diffuse, opacity );',
+            `
+              vec3 color = mix(uDepthColor, uSurfaceColor, vPattern);
+              vec4 diffuseColor = vec4(color, opacity);
+            `
+          )}
         `;
         this.material.userData.shader = shader;
       }
