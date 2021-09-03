@@ -105,11 +105,13 @@ const createShaderRipplingSphere = ({ camera }) => {
       this.material.onBeforeCompile = shader => {
         shader.uniforms.uTime = { value: 0.0 };
         shader.uniforms.uMidRadius = { value: this.parameters.radius };
+        shader.uniforms.uUvZoom = { value: 7.2 };
         shader.uniforms.uSurfaceColor = { value: new THREE.Color('#a9a9a9')  };
         shader.uniforms.uDepthColor = { value: new THREE.Color('#8a8a8a') };
         shader.vertexShader = `
           uniform float uTime;
           uniform float uMidRadius;
+          uniform float uUvZoom;
 
           varying float vPattern;
 
@@ -147,7 +149,7 @@ const createShaderRipplingSphere = ({ camera }) => {
           ${shader.vertexShader.replace('}', `
             vec4 modelPosition = modelMatrix * vec4(position, 1.0);
 
-            float pattern = getFractalPattern(uv * 7.0);
+            float pattern = getFractalPattern(uv * uUvZoom);
 
             Spherical spherical = cartesianToSpherical(modelPosition.xyz);
             spherical.radius += pattern * 0.5;

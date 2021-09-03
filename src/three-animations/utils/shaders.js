@@ -356,9 +356,9 @@ export const ShaderUtils = {
 export const fractals = () => `
 const float pi2 = radians(360.);
 const float ripple = 0.001;
-const float scale = 2.0;
+const float scale = 1.0;
 const float balance = 6.0;
-const float speed = 0.2;
+const float speed = 0.1;
 
 // A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
 uint hash( uint x ) {
@@ -564,7 +564,9 @@ vec3 hsv2rgb(vec3 c) {
 float getFractalPattern(vec2 uv)
 {
   vec3 pattern = hsv2rgb(vec3(noise(uv)*10., 1., 1.));
-  return pattern.x;
+  float steppedPattern = sin(pattern.x) + sin(pattern.y) + cos(pattern.z);
+  steppedPattern = smoothstep(0.0, 3.2, steppedPattern);
+  return steppedPattern;
 }
 `;
 
