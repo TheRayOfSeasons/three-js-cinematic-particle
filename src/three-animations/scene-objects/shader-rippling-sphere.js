@@ -8,6 +8,8 @@ const createShaderRipplingSphere = ({ camera }) => {
     clock: new THREE.Clock(),
     parameters: {
       radius: 8,
+      controlPoint1: new THREE.Vector3(-3, 0, 0),
+      controlPoint2: new THREE.Vector3(8, 0, 0),
     },
     init: function() {
       // this.geometry = new THREE.IcosahedronBufferGeometry(this.parameters.radius, 100);
@@ -104,14 +106,20 @@ const createShaderRipplingSphere = ({ camera }) => {
       });
       this.material.onBeforeCompile = shader => {
         shader.uniforms.uTime = { value: 0.0 };
+        shader.uniforms.uMaxElevation = { value: 0.5 };
         shader.uniforms.uMidRadius = { value: this.parameters.radius };
         shader.uniforms.uUvZoom = { value: 7.2 };
+        shader.uniforms.uWaveControlVectorA = { value: this.parameters.controlPoint1 };
+        shader.uniforms.uWaveControlVectorB = { value: this.parameters.controlPoint2 };
         shader.uniforms.uSurfaceColor = { value: new THREE.Color('#a9a9a9')  };
         shader.uniforms.uDepthColor = { value: new THREE.Color('#8a8a8a') };
         shader.vertexShader = `
           uniform float uTime;
+          uniform float uMaxElevation;
           uniform float uMidRadius;
           uniform float uUvZoom;
+          uniform vec3 uWaveControlVectorA;
+          uniform vec3 uWaveControlVectorB;
 
           varying float vPattern;
 
@@ -144,22 +152,40 @@ const createShaderRipplingSphere = ({ camera }) => {
             return vec3(x, y, z);
           }
 
+          bool isInBetween(float value, float min, float max)
+          {
+            return value >= min && value <= max;
+          }
+
           ${fractals()}
 
           ${shader.vertexShader.replace('}', `
             vec4 modelPosition = modelMatrix * vec4(position, 1.0);
 
-            float pattern = getFractalPattern(uv * uUvZoom);
+            float pattern = getFractalPattern(uv * uUvZoom) * uMaxElevation;
 
-            Spherical spherical = cartesianToSpherical(modelPosition.xyz);
-            spherical.radius += pattern * 0.5;
-            vec3 updatedPosition = sphericalToCartesian(spherical);
+            // edit pattern further here
 
-            modelPosition.x = updatedPosition.x;
-            modelPosition.y = updatedPosition.y;
-            modelPosition.z = updatedPosition.z;
+            bool inBetween = isInBetween(modelPosition.x, uWaveControlVectorA.x, uWaveControlVectorB.x);
 
-            vPattern = pattern;
+            if(inBetween)
+            {
+              float normalizedPattern = pattern / uMaxElevation;
+  
+              Spherical spherical = cartesianToSpherical(modelPosition.xyz);
+              spherical.radius += pattern;
+              vec3 updatedPosition = sphericalToCartesian(spherical);
+  
+              modelPosition.x = updatedPosition.x;
+              modelPosition.y = updatedPosition.y;
+              modelPosition.z = updatedPosition.z;
+  
+              vPattern = normalizedPattern;
+            }
+            else
+            {
+              vPattern = 1.0;
+            }
 
             vec4 viewPosition = viewMatrix * modelPosition;
             vec4 projectedPosition = projectionMatrix * viewPosition;
@@ -190,6 +216,8 @@ const createShaderRipplingSphere = ({ camera }) => {
       if(this.material.userData.shader)
       {
         this.material.userData.shader.uniforms.uTime.value = elapsedTime;
+        this.material.userData.shader.uniforms.uWaveControlVectorA.value = this.parameters.controlPoint1;
+        this.material.userData.shader.uniforms.uWaveControlVectorB.value = this.parameters.controlPoint2;
       }
     }
   }
