@@ -30,7 +30,7 @@ export const RipplingSphere = () => {
         ambientLightX: 0,
         ambientLightY: 200,
         ambientLightZ: 0,
-        directionalLightIntensity: 0.8,
+        directionalLightIntensity: 0.7,
         dirLightX: 100,
         dirLightY: 0,
         dirLightZ: 260,

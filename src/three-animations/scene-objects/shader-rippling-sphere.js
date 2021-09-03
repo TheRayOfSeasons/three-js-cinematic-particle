@@ -112,8 +112,8 @@ const createShaderRipplingSphere = ({ camera }) => {
         shader.uniforms.uUvZoom = { value: 7.2 };
         shader.uniforms.uWaveControlVectorA = { value: this.parameters.controlPoint1 };
         shader.uniforms.uWaveControlVectorB = { value: this.parameters.controlPoint2 };
-        shader.uniforms.uSurfaceColor = { value: new THREE.Color('#a9a9a9')  };
-        shader.uniforms.uDepthColor = { value: new THREE.Color('#8a8a8a') };
+        shader.uniforms.uSurfaceColor = { value: new THREE.Color('#b3b3b3')  };
+        shader.uniforms.uDepthColor = { value: new THREE.Color('#a9a9a9') };
         shader.vertexShader = `
           uniform float uTime;
           uniform float uMaxElevation;
@@ -189,7 +189,8 @@ const createShaderRipplingSphere = ({ camera }) => {
               }
               factor = smoothstep(0.0, 0.4, factor);
               pattern = pattern - (pattern * factor);
-              vPattern = 1.0;
+              float normalizedPattern = clamp(pattern / uMaxElevation, 0.5, 1.0);
+              vPattern = normalizedPattern;
             }
 
             Spherical spherical = cartesianToSpherical(modelPosition.xyz);
