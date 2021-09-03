@@ -36,8 +36,8 @@ export const RipplingSphere = () => {
         dirLightZ: 260,
 
         // objects
-        controlPoint1: -3,
-        controlPoint2: 8,
+        controlPoint1: -16,
+        controlPoint2: 16,
       }
     });
   }, [animationCanvas]);

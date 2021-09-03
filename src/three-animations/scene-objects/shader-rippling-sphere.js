@@ -7,6 +7,7 @@ const createShaderRipplingSphere = ({ camera }) => {
     group: new THREE.Group(),
     clock: new THREE.Clock(),
     parameters: {
+      debug: true,
       radius: 8,
       controlPoint1: new THREE.Vector3(-3, 0, 0),
       controlPoint2: new THREE.Vector3(8, 0, 0),
@@ -164,28 +165,40 @@ const createShaderRipplingSphere = ({ camera }) => {
 
             float pattern = getFractalPattern(uv * uUvZoom) * uMaxElevation;
 
-            // edit pattern further here
-
             bool inBetween = isInBetween(modelPosition.x, uWaveControlVectorA.x, uWaveControlVectorB.x);
 
             if(inBetween)
             {
               float normalizedPattern = pattern / uMaxElevation;
-  
-              Spherical spherical = cartesianToSpherical(modelPosition.xyz);
-              spherical.radius += pattern;
-              vec3 updatedPosition = sphericalToCartesian(spherical);
-  
-              modelPosition.x = updatedPosition.x;
-              modelPosition.y = updatedPosition.y;
-              modelPosition.z = updatedPosition.z;
-  
               vPattern = normalizedPattern;
             }
             else
             {
+              float factor = 0.0;
+              if(modelPosition.x <= uWaveControlVectorA.x && modelPosition.x <= uWaveControlVectorB.x)
+              {
+                float distanceA = abs(uWaveControlVectorA.x - modelPosition.x);
+                float span = abs(uWaveControlVectorA.x - -uMidRadius);
+                factor = distanceA / span;
+              }
+              else if(modelPosition.x >= uWaveControlVectorB.x && modelPosition.x >= uWaveControlVectorA.x)
+              {
+                float distanceB = abs(uWaveControlVectorB.x - modelPosition.x);
+                float span = abs(uWaveControlVectorB.x - uMidRadius);
+                factor = distanceB / span;
+              }
+              factor = smoothstep(0.0, 0.4, factor);
+              pattern = pattern - (pattern * factor);
               vPattern = 1.0;
             }
+
+            Spherical spherical = cartesianToSpherical(modelPosition.xyz);
+            spherical.radius += pattern;
+            vec3 updatedPosition = sphericalToCartesian(spherical);
+
+            modelPosition.x = updatedPosition.x;
+            modelPosition.y = updatedPosition.y;
+            modelPosition.z = updatedPosition.z;
 
             vec4 viewPosition = viewMatrix * modelPosition;
             vec4 projectedPosition = projectionMatrix * viewPosition;
@@ -210,6 +223,16 @@ const createShaderRipplingSphere = ({ camera }) => {
       }
       this.mesh = new THREE.Mesh(this.geometry, this.material);
       this.group.add(this.mesh);
+
+      if(this.parameters.debug) {
+        this.axes = [
+          new THREE.AxesHelper(10),
+          new THREE.AxesHelper(10),
+        ];
+        for(const axes of this.axes) {
+          this.group.add(axes);
+        }
+      }
     },
     update: function() {
       const elapsedTime = this.clock.getElapsedTime();
@@ -218,6 +241,11 @@ const createShaderRipplingSphere = ({ camera }) => {
         this.material.userData.shader.uniforms.uTime.value = elapsedTime;
         this.material.userData.shader.uniforms.uWaveControlVectorA.value = this.parameters.controlPoint1;
         this.material.userData.shader.uniforms.uWaveControlVectorB.value = this.parameters.controlPoint2;
+
+        if(this.parameters.debug) {
+          this.axes[0].position.copy(this.parameters.controlPoint1);
+          this.axes[1].position.copy(this.parameters.controlPoint2);
+        }
       }
     }
   }

@@ -111,15 +111,15 @@ const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
           this.scene.add(ripplingSphere.group);
 
           const objectFolder = this.gui.addFolder('Rippling Sphere');
-          const radius = ripplingSphere.parameters.radius;
+          const diameter = ripplingSphere.parameters.radius * 2.0;
 
           ripplingSphere.parameters.controlPoint1.x = this.guiAPI.controlPoint1;
-          objectFolder.add(this.guiAPI, 'controlPoint1', -radius, radius).onChange(() => {
+          objectFolder.add(this.guiAPI, 'controlPoint1', -diameter, diameter).onChange(() => {
             ripplingSphere.parameters.controlPoint1.x = this.guiAPI.controlPoint1;
           });
 
           ripplingSphere.parameters.controlPoint2.x = this.guiAPI.controlPoint2;
-          objectFolder.add(this.guiAPI, 'controlPoint2', -radius, radius).onChange(() => {
+          objectFolder.add(this.guiAPI, 'controlPoint2', -diameter, diameter).onChange(() => {
             ripplingSphere.parameters.controlPoint2.x = this.guiAPI.controlPoint2;
           });
 
