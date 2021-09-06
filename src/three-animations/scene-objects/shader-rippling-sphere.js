@@ -13,93 +13,19 @@ const createShaderRipplingSphere = ({ camera }) => {
       controlPoint2: new THREE.Vector3(8, 0, 0),
     },
     init: function() {
-      // this.geometry = new THREE.IcosahedronBufferGeometry(this.parameters.radius, 100);
       this.geometry = new THREE.SphereBufferGeometry(this.parameters.radius, 768, 768);
 
-      // this.material = new THREE.ShaderMaterial({
-      //   uniforms: {
-      //     uTime: { value: 0.0 },
-      //     uMidRadius: { value: this.parameters.radius },
-      //     uSurfaceColor: { value: new THREE.Color('#e7e7e7') },
-      //     uDepthColor: { value: new THREE.Color('#a9a9a9') },
-      //   },
-      //   vertexShader: `
-      //     uniform float uTime;
-      //     uniform float uMidRadius;
-
-      //     varying float vElevation;
-      //     varying float vPattern;
-      //     varying vec2 vUv;
-
-      //     struct Spherical
-      //     {
-      //       float radius;
-      //       float phi;
-      //       float theta;
-      //     };
-
-      //     Spherical cartesianToSpherical(vec3 cartesianCoords)
-      //     {
-      //       float x = cartesianCoords.x;
-      //       float y = cartesianCoords.y;
-      //       float z = cartesianCoords.z;
-      //       float radius = sqrt(x * x + y * y + z * z);
-      //       float phi = atan(sqrt(x * x + y * y), z);
-      //       float theta = atan(y, x);
-      //       return Spherical(radius, phi, theta);
-      //     }
-
-      //     vec3 sphericalToCartesian(Spherical spherical)
-      //     {
-      //       float radius = spherical.radius;
-      //       float phi = spherical.phi;
-      //       float theta = spherical.theta;
-      //       float x = radius * sin(phi) * cos(theta);
-      //       float y = radius * sin(phi) * sin(theta);
-      //       float z = radius * cos(phi);
-      //       return vec3(x, y, z);
-      //     }
-
-      //     ${fractals()}
-
-      //     void main()
-      //     {
-      //       vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-
-      //       float pattern = getFractalPattern(uv * 3.0);
-
-      //       Spherical spherical = cartesianToSpherical(modelPosition.xyz);
-      //       spherical.radius += pattern * 0.5;
-      //       vec3 updatedPosition = sphericalToCartesian(spherical);
-
-      //       modelPosition.x = updatedPosition.x;
-      //       modelPosition.y = updatedPosition.y;
-      //       modelPosition.z = updatedPosition.z;
-
-      //       // modelPosition.z += pattern;
-
-      //       vPattern = pattern;
-      //       vUv = uv;
-
-      //       vec4 viewPosition = viewMatrix * modelPosition;
-      //       vec4 projectedPosition = projectionMatrix * viewPosition;
-      //       gl_Position = projectedPosition;
-      //     }
-      //   `,
-      //   fragmentShader: `
-      //     uniform vec3 uSurfaceColor;
-      //     uniform vec3 uDepthColor;
-
-      //     varying float vPattern;
-
-      //     void main()
-      //     {
-      //       // float mixStrength = vPattern;
-      //       // vec3 color = mix(uDepthColor, uSurfaceColor, mixStrength);
-      //       gl_FragColor = vec4(uSurfaceColor, 1.0);
-      //     }
-      //   `
-      // });
+      this.mousePosition = new THREE.Vector2();
+      this.raycaster = new THREE.Raycaster();
+      this.raycastPlane = new THREE.Plane(new THREE.Vector3(0, 1, 1.5), 0);
+      this.raycastSphere = new THREE.Sphere(new THREE.Vector3(), this.parameters.radius);
+      this.intersectPoint = new THREE.Vector3();
+      this.group.add(this.easingPosition);
+      window.addEventListener('mousemove', event => {
+        this.mousePosition.x = (event.clientX / window.innerWidth) * 2 - 1;
+        this.mousePosition.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        this.raycaster.setFromCamera(this.mousePosition, this.camera);
+      });
 
       this.material = new THREE.MeshStandardMaterial({
         color: '#a9a9a9',
@@ -110,15 +36,17 @@ const createShaderRipplingSphere = ({ camera }) => {
         shader.uniforms.uMaxElevation = { value: 0.5 };
         shader.uniforms.uMidRadius = { value: this.parameters.radius };
         shader.uniforms.uUvZoom = { value: 7.2 };
+        shader.uniforms.uIntersectPoint = { value: this.intersectPoint };
         shader.uniforms.uWaveControlVectorA = { value: this.parameters.controlPoint1 };
         shader.uniforms.uWaveControlVectorB = { value: this.parameters.controlPoint2 };
-        shader.uniforms.uSurfaceColor = { value: new THREE.Color('#b3b3b3')  };
+        shader.uniforms.uSurfaceColor = { value: new THREE.Color('#b3b3b3') };
         shader.uniforms.uDepthColor = { value: new THREE.Color('#a9a9a9') };
         shader.vertexShader = `
           uniform float uTime;
           uniform float uMaxElevation;
           uniform float uMidRadius;
           uniform float uUvZoom;
+          uniform vec3 uIntersectPoint;
           uniform vec3 uWaveControlVectorA;
           uniform vec3 uWaveControlVectorB;
 
@@ -233,13 +161,32 @@ const createShaderRipplingSphere = ({ camera }) => {
         for(const axes of this.axes) {
           this.group.add(axes);
         }
+        this.debugRaycasterBox = new THREE.Mesh(
+          new THREE.BoxBufferGeometry(1, 1, 1),
+          new THREE.MeshNormalMaterial()
+        );
+        this.group.add(this.debugRaycasterBox);
       }
     },
     update: function() {
       const elapsedTime = this.clock.getElapsedTime();
+
+      // TODO: We need boolean to check if cursor hovers over sphere.
+      // This is separate from the Sphere math because such intersection
+      // persists. We need a checker if it still intersects or not.
+
+      this.raycastSphere.center.copy(this.mesh.position);
+      this.raycaster.ray.intersectSphere(this.raycastSphere, this.intersectPoint);
+      if(this.parameters.debug) {
+        console.log(this.intersectPoint);
+        this.debugRaycasterBox.position.copy(this.intersectPoint);
+        this.debugRaycasterBox.lookAt(this.raycastSphere.center);
+      }
+
       if(this.material.userData.shader)
       {
         this.material.userData.shader.uniforms.uTime.value = elapsedTime;
+        this.material.userData.shader.uniforms.uIntersectPoint.value = this.intersectPoint;
         this.material.userData.shader.uniforms.uWaveControlVectorA.value = this.parameters.controlPoint1;
         this.material.userData.shader.uniforms.uWaveControlVectorB.value = this.parameters.controlPoint2;
 

@@ -111,6 +111,7 @@ const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
           this.scene.add(ripplingSphere.group);
 
           const objectFolder = this.gui.addFolder('Rippling Sphere');
+          objectFolder.open();
           const diameter = ripplingSphere.parameters.radius * 2.0;
 
           ripplingSphere.parameters.controlPoint1.x = this.guiAPI.controlPoint1;

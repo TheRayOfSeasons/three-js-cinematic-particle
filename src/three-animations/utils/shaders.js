@@ -358,7 +358,7 @@ const float pi2 = radians(360.);
 const float ripple = 0.001;
 const float scale = 1.0;
 const float balance = 6.0;
-const float speed = 0.1;
+const float speed = 0.05;
 
 // A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
 uint hash( uint x ) {

@@ -22,7 +22,7 @@ export const RipplingSphere = () => {
       guiAPI: {
         // lighting
         skyColor: '#ffffff',
-        groundColor: '#383838',
+        groundColor: '#ffffff',
         directionalLight: '#ffffff',
         enableAmbientLight: true,
         enableDirectionalLight: true,
