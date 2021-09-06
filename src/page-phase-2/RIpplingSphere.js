@@ -38,6 +38,13 @@ export const RipplingSphere = () => {
         // objects
         controlPoint1: 16,
         controlPoint2: 16,
+
+        enableInteraction: true,
+        interactionRadius: 7.0,
+        maxElevation: 0.5,
+        smoothing: 0.4,
+        speed: 0.05,
+        zoom: 7.2,
       }
     });
   }, [animationCanvas]);

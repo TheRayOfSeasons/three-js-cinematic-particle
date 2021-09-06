@@ -358,7 +358,6 @@ const float pi2 = radians(360.);
 const float ripple = 0.001;
 const float scale = 1.0;
 const float balance = 6.0;
-const float speed = 0.05;
 
 // A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
 uint hash( uint x ) {
@@ -402,7 +401,7 @@ float random( vec4  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
 
 vec2 random_unit_vector(vec2 uv)
 {
-    float theta = random(uv)*pi2;    
+    float theta = random(uv)*pi2;
     return vec2(cos(theta), sin(theta));
 }
 
@@ -410,14 +409,14 @@ vec2 random_unit_vector(vec2 uv)
 vec3 random_unit_vector(vec3 uv)
 {
     const vec3 offset = vec3(531.2346,652.56,567.3);
-    
+
     float theta = random(uv)*pi2;
     float phi = acos(1. - 2. * random(uv+offset));
     vec3 unit_vec;
     unit_vec.x = sin(phi) * cos(theta);
     unit_vec.y = sin(phi) * sin(theta);
     unit_vec.z = cos(phi);
-    
+
     return unit_vec;
 }
 
@@ -435,7 +434,7 @@ float value_noise(vec2 uv)
 {
     vec2 lv = smoothstep(0., 1., fract(uv));
     vec2 id = floor(uv);
-    
+
     float lb = random(id);
     float rb = random(id + vec2(1., 0.));
     float lt = random(id + vec2(0., 1.));
@@ -448,17 +447,17 @@ float value_noise(vec3 uv)
 {
     vec3 lv = smoothstep(0., 1., fract(uv));
     vec3 id = floor(uv);
-    
+
     float lbf = random(id);
     float rbf = random(id + vec3(1., 0., 0.));
     float ltf = random(id + vec3(0., 1., 0.));
 	float rtf = random(id + vec3(1., 1., 0.));
-    
+
     float lbb = random(id + vec3(0., 0., 1.));
     float rbb = random(id + vec3(1., 0., 1.));
     float ltb = random(id + vec3(0., 1., 1.));
 	float rtb = random(id + vec3(1., 1., 1.));
-	
+
     float front = mix(mix(lbf, rbf, lv.x), mix(ltf, rtf, lv.x), lv.y);
     float back = mix(mix(lbb, rbb, lv.x), mix(ltb, rtb, lv.x), lv.y);
     return mix(front, back, lv.z);
@@ -468,14 +467,14 @@ float perlin_noise(vec2 uv)
 {
     vec2 lv = fract(uv);
     vec2 id = floor(uv);
-    
+
     vec2 lb, rb, lt, rt;
-    
+
     lb = random_unit_vector(id);
     rb = random_unit_vector(id + vec2(1., 0.));
     lt = random_unit_vector(id + vec2(0., 1.));
     rt = random_unit_vector(id + vec2(1., 1.));
-    
+
     float dlb = dot(lb, lv);
 	float drb = dot(rb, lv - vec2(1., 0.));
     float dlt = dot(lt, lv - vec2(0., 1.));
@@ -490,7 +489,7 @@ float perlin_noise(vec3 uv)
 {
     vec3 lv = fract(uv);
     vec3 id = floor(uv);
-    
+
     vec3 lbf, rbf, ltf, rtf, lbb, rbb, ltb, rtb;
 
     lbf = random_unit_vector(id);
@@ -501,19 +500,19 @@ float perlin_noise(vec3 uv)
     rbb = random_unit_vector(id + vec3(1., 0., 1.));
     ltb = random_unit_vector(id + vec3(0., 1., 1.));
     rtb = random_unit_vector(id + vec3(1., 1., 1.));
-    
+
     float dlbf = dot(lbf, lv);
 	float drbf = dot(rbf, lv - vec3(1., 0., 0.));
     float dltf = dot(ltf, lv - vec3(0., 1., 0.));
     float drtf = dot(rtf, lv - vec3(1., 1., 0.));
-    
+
     float dlbb = dot(lbb, lv - vec3(0., 0., 1.));
 	float drbb = dot(rbb, lv - vec3(1., 0., 1.));
     float dltb = dot(ltb, lv - vec3(0., 1., 1.));
     float drtb = dot(rtb, lv - vec3(1., 1., 1.));
-    
+
     lv = smooth_func(lv);
-    
+
     float f = mix(mix(dlbf, drbf, lv.x), mix(dltf, drtf, lv.x), lv.y);
     float b = mix(mix(dlbb, drbb, lv.x), mix(dltb, drtb, lv.x), lv.y);
 
@@ -531,7 +530,7 @@ float fractal_noise(vec2 uv, float octaves)
         c += perlin_noise(uv*a)*b;
         s += b;
     }
-    
+
     return c / s;
 }
 
@@ -546,27 +545,8 @@ float fractal_noise(vec3 uv, float octaves)
         c += perlin_noise(uv*a)*b;
         s += b;
     }
-    
+
     return c / s;
-}
-
-float noise(vec2 uv)
-{
-    return fractal_noise(vec3(uv, uTime * speed), ripple);
-}
-
-vec3 hsv2rgb(vec3 c) {
-  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-  vec3 p = abs(fract(c.xxx + K.xyz) * balance - K.www);
-  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-}
-
-float getFractalPattern(vec2 uv)
-{
-  vec3 pattern = hsv2rgb(vec3(noise(uv)*10., 1., 1.));
-  float steppedPattern = sin(pattern.x) + sin(pattern.y) + cos(pattern.z);
-  steppedPattern = smoothstep(0.0, 3.2, steppedPattern);
-  return steppedPattern;
 }
 `;
 
@@ -623,7 +603,7 @@ float getFractalPattern(vec2 uv)
 
 // vec2 random_unit_vector(vec2 uv)
 // {
-//     float theta = random(uv)*pi2;    
+//     float theta = random(uv)*pi2;
 //     return vec2(cos(theta), sin(theta));
 // }
 
@@ -631,14 +611,14 @@ float getFractalPattern(vec2 uv)
 // vec3 random_unit_vector(vec3 uv)
 // {
 //     const vec3 offset = vec3(531.2346,652.56,567.3);
-    
+
 //     float theta = random(uv)*pi2;
 //     float phi = acos(1. - 2. * random(uv+offset));
 //     vec3 unit_vec;
 //     unit_vec.x = sin(phi) * cos(theta);
 //     unit_vec.y = sin(phi) * sin(theta);
 //     unit_vec.z = cos(phi);
-    
+
 //     return unit_vec;
 // }
 
@@ -656,7 +636,7 @@ float getFractalPattern(vec2 uv)
 // {
 //     vec2 lv = smoothstep(0., 1., fract(uv));
 //     vec2 id = floor(uv);
-    
+
 //     float lb = random(id);
 //     float rb = random(id + vec2(1., 0.));
 //     float lt = random(id + vec2(0., 1.));
@@ -669,17 +649,17 @@ float getFractalPattern(vec2 uv)
 // {
 //     vec3 lv = smoothstep(0., 1., fract(uv));
 //     vec3 id = floor(uv);
-    
+
 //     float lbf = random(id);
 //     float rbf = random(id + vec3(1., 0., 0.));
 //     float ltf = random(id + vec3(0., 1., 0.));
 // 	float rtf = random(id + vec3(1., 1., 0.));
-    
+
 //     float lbb = random(id + vec3(0., 0., 1.));
 //     float rbb = random(id + vec3(1., 0., 1.));
 //     float ltb = random(id + vec3(0., 1., 1.));
 // 	float rtb = random(id + vec3(1., 1., 1.));
-	
+
 //     float front = mix(mix(lbf, rbf, lv.x), mix(ltf, rtf, lv.x), lv.y);
 //     float back = mix(mix(lbb, rbb, lv.x), mix(ltb, rtb, lv.x), lv.y);
 //     return mix(front, back, lv.z);
@@ -689,14 +669,14 @@ float getFractalPattern(vec2 uv)
 // {
 //     vec2 lv = fract(uv);
 //     vec2 id = floor(uv);
-    
+
 //     vec2 lb, rb, lt, rt;
-    
+
 //     lb = random_unit_vector(id);
 //     rb = random_unit_vector(id + vec2(1., 0.));
 //     lt = random_unit_vector(id + vec2(0., 1.));
 //     rt = random_unit_vector(id + vec2(1., 1.));
-    
+
 //     float dlb = dot(lb, lv);
 // 	float drb = dot(rb, lv - vec2(1., 0.));
 //     float dlt = dot(lt, lv - vec2(0., 1.));
@@ -711,7 +691,7 @@ float getFractalPattern(vec2 uv)
 // {
 //     vec3 lv = fract(uv);
 //     vec3 id = floor(uv);
-    
+
 //     vec3 lbf, rbf, ltf, rtf, lbb, rbb, ltb, rtb;
 
 //     lbf = random_unit_vector(id);
@@ -722,19 +702,19 @@ float getFractalPattern(vec2 uv)
 //     rbb = random_unit_vector(id + vec3(1., 0., 1.));
 //     ltb = random_unit_vector(id + vec3(0., 1., 1.));
 //     rtb = random_unit_vector(id + vec3(1., 1., 1.));
-    
+
 //     float dlbf = dot(lbf, lv);
 // 	float drbf = dot(rbf, lv - vec3(1., 0., 0.));
 //     float dltf = dot(ltf, lv - vec3(0., 1., 0.));
 //     float drtf = dot(rtf, lv - vec3(1., 1., 0.));
-    
+
 //     float dlbb = dot(lbb, lv - vec3(0., 0., 1.));
 // 	float drbb = dot(rbb, lv - vec3(1., 0., 1.));
 //     float dltb = dot(ltb, lv - vec3(0., 1., 1.));
 //     float drtb = dot(rtb, lv - vec3(1., 1., 1.));
-    
+
 //     lv = smooth_func(lv);
-    
+
 //     float f = mix(mix(dlbf, drbf, lv.x), mix(dltf, drtf, lv.x), lv.y);
 //     float b = mix(mix(dlbb, drbb, lv.x), mix(dltb, drtb, lv.x), lv.y);
 
@@ -752,7 +732,7 @@ float getFractalPattern(vec2 uv)
 //         c += perlin_noise(uv*a)*b;
 //         s += b;
 //     }
-    
+
 //     return c / s;
 // }
 
@@ -767,7 +747,7 @@ float getFractalPattern(vec2 uv)
 //         c += perlin_noise(uv*a)*b;
 //         s += b;
 //     }
-    
+
 //     return c / s;
 // }
 
@@ -785,7 +765,7 @@ float getFractalPattern(vec2 uv)
 // void mainImage( out vec4 fragColor, in vec2 fragCoord )
 // {
 //     vec2 uv = (fragCoord/iResolution.y) * 2.0;
-    
+
 // 	// fragColor = vec4(hsv2rgb(vec3(noise(uv)*10., 1., 1.)), 1.);
 //     vec3 pattern = hsv2rgb(vec3(noise(uv)*10., 1., 1.));
 //     fragColor = vec4(vec3(pattern.x), 1.);

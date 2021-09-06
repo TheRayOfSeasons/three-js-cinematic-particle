@@ -8,10 +8,12 @@ const createShaderRipplingSphere = ({ camera }) => {
     clock: new THREE.Clock(),
     parameters: {
       debug: false,
+      showControlPoints: true,
       radius: 8,
       controlPoint1: new THREE.Vector3(-3, 0, 0),
       controlPoint2: new THREE.Vector3(8, 0, 0),
     },
+    material: new THREE.MeshStandardMaterial({ color: '#a9a9a9', }),
     init: function() {
       this.geometry = new THREE.SphereBufferGeometry(this.parameters.radius, 768, 768);
 
@@ -27,14 +29,14 @@ const createShaderRipplingSphere = ({ camera }) => {
         this.raycaster.setFromCamera(this.mousePosition, this.camera);
       });
 
-      this.material = new THREE.MeshStandardMaterial({
-        color: '#a9a9a9',
-        // emissive: '#dbdbdb',
-      });
       this.material.onBeforeCompile = shader => {
-        shader.uniforms.uTime = { value: 0.0 };
+        shader.uniforms.uEnableInteraction = { value: true };
+        shader.uniforms.uInteractionRadius = { value: 7.0 };
         shader.uniforms.uMaxElevation = { value: 0.5 };
         shader.uniforms.uMidRadius = { value: this.parameters.radius };
+        shader.uniforms.uSmoothing = { value: 0.4 };
+        shader.uniforms.uSpeed = { value: 0.05 };
+        shader.uniforms.uTime = { value: 0.0 };
         shader.uniforms.uUvZoom = { value: 7.2 };
         shader.uniforms.uIntersectPoint = { value: this.intersectPoint };
         shader.uniforms.uWaveControlVectorA = { value: this.parameters.controlPoint1 };
@@ -45,9 +47,13 @@ const createShaderRipplingSphere = ({ camera }) => {
           const float RADIANS_TO_DEGREES = 57.29577951308232;
           const float PI = 3.141592653589793;
 
-          uniform float uTime;
+          uniform bool uEnableInteraction;
+          uniform float uInteractionRadius;
           uniform float uMaxElevation;
           uniform float uMidRadius;
+          uniform float uSmoothing;
+          uniform float uSpeed;
+          uniform float uTime;
           uniform float uUvZoom;
           uniform vec3 uIntersectPoint;
           uniform vec3 uWaveControlVectorA;
@@ -91,6 +97,25 @@ const createShaderRipplingSphere = ({ camera }) => {
 
           ${fractals()}
 
+          float noise(vec2 uv)
+          {
+            return fractal_noise(vec3(uv, uTime * uSpeed), ripple);
+          }
+
+          vec3 hsv2rgb(vec3 c) {
+            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+            vec3 p = abs(fract(c.xxx + K.xyz) * balance - K.www);
+            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+          }
+
+          float getFractalPattern(vec2 uv)
+          {
+            vec3 pattern = hsv2rgb(vec3(noise(uv)*10., 1., 1.));
+            float steppedPattern = sin(pattern.x) + sin(pattern.y) + cos(pattern.z);
+            steppedPattern = smoothstep(0.0, 3.2, steppedPattern);
+            return steppedPattern;
+          }
+
           ${shader.vertexShader.replace('}', `
             vec4 modelPosition = modelMatrix * vec4(position, 1.0);
 
@@ -106,7 +131,6 @@ const createShaderRipplingSphere = ({ camera }) => {
             else
             {
               float factor = 0.0;
-              float maxFactorStep = 0.4;
               if(modelPosition.x <= uWaveControlVectorA.x && modelPosition.x <= uWaveControlVectorB.x)
               {
                 float distanceA = abs(uWaveControlVectorA.x - modelPosition.x);
@@ -120,14 +144,17 @@ const createShaderRipplingSphere = ({ camera }) => {
                 factor = distanceB / span;
               }
 
-              factor = smoothstep(0.0, 0.4, factor);
+              factor = smoothstep(0.0, uSmoothing, factor);
 
               // if near mouse intersect point
-              float chordLength = abs(distance(modelPosition.xyz, uIntersectPoint));
-              float interactiveElevation = 1.0 - (chordLength / 7.0);
-              interactiveElevation = smoothstep(0.4, 0.0, interactiveElevation);
+              if(uEnableInteraction)
+              {
+                float chordLength = abs(distance(modelPosition.xyz, uIntersectPoint));
+                float interactiveElevation = 1.0 - (chordLength / uInteractionRadius);
+                interactiveElevation = smoothstep(uSmoothing, 0.0, interactiveElevation);
 
-              factor = factor > interactiveElevation ? interactiveElevation : factor;
+                factor = factor > interactiveElevation ? interactiveElevation : factor;
+              }
 
               pattern = pattern - (pattern * factor);
               // float normalizedPattern = clamp(pattern / uMaxElevation, 0.5, 1.0);
@@ -169,7 +196,7 @@ const createShaderRipplingSphere = ({ camera }) => {
 
       this.worldPosition = new THREE.Vector3();
 
-      if(this.parameters.debug) {
+      if(this.parameters.showControlPoints) {
         this.axes = [
           new THREE.AxesHelper(10),
           new THREE.AxesHelper(10),
@@ -177,12 +204,14 @@ const createShaderRipplingSphere = ({ camera }) => {
         for(const axes of this.axes) {
           this.group.add(axes);
         }
+      }
+
+      if(this.parameters.debug) {
         this.debugRaycasterBox = new THREE.Mesh(
           new THREE.BoxBufferGeometry(1, 1, 1),
           new THREE.MeshNormalMaterial()
         );
         this.group.add(this.debugRaycasterBox);
-
         this.group.add(new THREE.PlaneHelper(this.raycastPlane, 0xffff00));
       }
     },
@@ -213,7 +242,7 @@ const createShaderRipplingSphere = ({ camera }) => {
         this.material.userData.shader.uniforms.uWaveControlVectorA.value = this.parameters.controlPoint1;
         this.material.userData.shader.uniforms.uWaveControlVectorB.value = this.parameters.controlPoint2;
 
-        if(this.parameters.debug) {
+        if(this.parameters.showControlPoints) {
           this.axes[0].position.copy(this.parameters.controlPoint1);
           this.axes[1].position.copy(this.parameters.controlPoint2);
         }

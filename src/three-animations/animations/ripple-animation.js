@@ -110,18 +110,44 @@ const RipplingSphereAnimation = ({ canvas, gui, guiAPI }) => {
           ripplingSphere.init();
           this.scene.add(ripplingSphere.group);
 
-          const objectFolder = this.gui.addFolder('Rippling Sphere');
+          const objectFolder = this.gui.addFolder('Control Points');
           objectFolder.open();
-          const diameter = ripplingSphere.parameters.radius * 2.0;
+          const controlPointThreshold = ripplingSphere.parameters.radius * 4.0;
 
           ripplingSphere.parameters.controlPoint1.x = this.guiAPI.controlPoint1;
-          objectFolder.add(this.guiAPI, 'controlPoint1', -diameter, diameter).onChange(() => {
+          objectFolder.add(this.guiAPI, 'controlPoint1', -controlPointThreshold, controlPointThreshold).onChange(() => {
             ripplingSphere.parameters.controlPoint1.x = this.guiAPI.controlPoint1;
           });
 
           ripplingSphere.parameters.controlPoint2.x = this.guiAPI.controlPoint2;
-          objectFolder.add(this.guiAPI, 'controlPoint2', -diameter, diameter).onChange(() => {
+          objectFolder.add(this.guiAPI, 'controlPoint2', -controlPointThreshold, controlPointThreshold).onChange(() => {
             ripplingSphere.parameters.controlPoint2.x = this.guiAPI.controlPoint2;
+          });
+
+          const ripplingFolder = this.gui.addFolder('Rippling Sphere');
+
+          ripplingFolder.add(this.guiAPI, 'enableInteraction', true).onChange(() => {
+            ripplingSphere.material.userData.shader.uniforms.uEnableInteraction.value = this.guiAPI.enableInteraction;
+          });
+
+          ripplingFolder.add(this.guiAPI, 'interactionRadius', 0.01, 10.00).onChange(() => {
+            ripplingSphere.material.userData.shader.uniforms.uInteractionRadius.value = this.guiAPI.interactionRadius;
+          });
+
+          ripplingFolder.add(this.guiAPI, 'maxElevation', 0.01, 1.00).onChange(() => {
+            ripplingSphere.material.userData.shader.uniforms.uMaxElevation.value = this.guiAPI.maxElevation;
+          });
+
+          ripplingFolder.add(this.guiAPI, 'smoothing', 0.01, 1.00).onChange(() => {
+            ripplingSphere.material.userData.shader.uniforms.uSmoothing.value = this.guiAPI.smoothing;
+          });
+
+          ripplingFolder.add(this.guiAPI, 'speed', 0.01, 1.00).onChange(() => {
+            ripplingSphere.material.userData.shader.uniforms.uSpeed.value = this.guiAPI.speed;
+          });
+
+          ripplingFolder.add(this.guiAPI, 'zoom', 0.01, 10.00).onChange(() => {
+            ripplingSphere.material.userData.shader.uniforms.uUvZoom.value = this.guiAPI.zoom;
           });
 
           return ripplingSphere;
