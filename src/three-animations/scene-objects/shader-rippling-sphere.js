@@ -120,21 +120,14 @@ const createShaderRipplingSphere = ({ camera }) => {
                 factor = distanceB / span;
               }
 
-              // if near mouse intersect point
-              float chordLength = abs(distance(modelPosition.xyz, uIntersectPoint));
-              // float chordAngle = abs(cos(chordLength / uMidRadius) * RADIANS_TO_DEGREES);
-              // float circumference = 2.0 * PI * uMidRadius;
-              // float halfCircumference = circumference * 0.5;
-              // float arcLength = (chordAngle / 360.0) * circumference;
-
               factor = smoothstep(0.0, 0.4, factor);
 
-              if(factor > 0.9)
-              {
-                float interactiveElevation = 1.0 - (chordLength / 7.0);
-                interactiveElevation = smoothstep(0.4, 0.0, interactiveElevation);
-                factor = interactiveElevation;
-              }
+              // if near mouse intersect point
+              float chordLength = abs(distance(modelPosition.xyz, uIntersectPoint));
+              float interactiveElevation = 1.0 - (chordLength / 7.0);
+              interactiveElevation = smoothstep(0.4, 0.0, interactiveElevation);
+
+              factor = factor > interactiveElevation ? interactiveElevation : factor;
 
               pattern = pattern - (pattern * factor);
               // float normalizedPattern = clamp(pattern / uMaxElevation, 0.5, 1.0);
