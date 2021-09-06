@@ -36,7 +36,7 @@ export const RipplingSphere = () => {
         dirLightZ: 260,
 
         // objects
-        controlPoint1: -16,
+        controlPoint1: 16,
         controlPoint2: 16,
       }
     });

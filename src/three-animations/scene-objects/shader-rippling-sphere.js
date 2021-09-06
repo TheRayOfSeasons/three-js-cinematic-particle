@@ -7,7 +7,7 @@ const createShaderRipplingSphere = ({ camera }) => {
     group: new THREE.Group(),
     clock: new THREE.Clock(),
     parameters: {
-      debug: true,
+      debug: false,
       radius: 8,
       controlPoint1: new THREE.Vector3(-3, 0, 0),
       controlPoint2: new THREE.Vector3(8, 0, 0),
@@ -42,6 +42,9 @@ const createShaderRipplingSphere = ({ camera }) => {
         shader.uniforms.uSurfaceColor = { value: new THREE.Color('#b3b3b3') };
         shader.uniforms.uDepthColor = { value: new THREE.Color('#a9a9a9') };
         shader.vertexShader = `
+          const float RADIANS_TO_DEGREES = 57.29577951308232;
+          const float PI = 3.141592653589793;
+
           uniform float uTime;
           uniform float uMaxElevation;
           uniform float uMidRadius;
@@ -103,6 +106,7 @@ const createShaderRipplingSphere = ({ camera }) => {
             else
             {
               float factor = 0.0;
+              float maxFactorStep = 0.4;
               if(modelPosition.x <= uWaveControlVectorA.x && modelPosition.x <= uWaveControlVectorB.x)
               {
                 float distanceA = abs(uWaveControlVectorA.x - modelPosition.x);
@@ -115,9 +119,26 @@ const createShaderRipplingSphere = ({ camera }) => {
                 float span = abs(uWaveControlVectorB.x - uMidRadius);
                 factor = distanceB / span;
               }
+
+              // if near mouse intersect point
+              float chordLength = abs(distance(modelPosition.xyz, uIntersectPoint));
+              // float chordAngle = abs(cos(chordLength / uMidRadius) * RADIANS_TO_DEGREES);
+              // float circumference = 2.0 * PI * uMidRadius;
+              // float halfCircumference = circumference * 0.5;
+              // float arcLength = (chordAngle / 360.0) * circumference;
+
               factor = smoothstep(0.0, 0.4, factor);
+
+              if(factor > 0.9)
+              {
+                float interactiveElevation = 1.0 - (chordLength / 7.0);
+                interactiveElevation = smoothstep(0.4, 0.0, interactiveElevation);
+                factor = interactiveElevation;
+              }
+
               pattern = pattern - (pattern * factor);
-              float normalizedPattern = clamp(pattern / uMaxElevation, 0.5, 1.0);
+              // float normalizedPattern = clamp(pattern / uMaxElevation, 0.5, 1.0);
+              float normalizedPattern = pattern / uMaxElevation;
               vPattern = normalizedPattern;
             }
 
@@ -153,6 +174,8 @@ const createShaderRipplingSphere = ({ camera }) => {
       this.mesh = new THREE.Mesh(this.geometry, this.material);
       this.group.add(this.mesh);
 
+      this.worldPosition = new THREE.Vector3();
+
       if(this.parameters.debug) {
         this.axes = [
           new THREE.AxesHelper(10),
@@ -168,6 +191,10 @@ const createShaderRipplingSphere = ({ camera }) => {
         this.group.add(this.debugRaycasterBox);
       }
     },
+    updateSphereCenter: function() {
+      this.mesh.getWorldPosition(this.worldPosition);
+      this.raycastSphere.center.copy(this.worldPosition);
+    },
     update: function() {
       const elapsedTime = this.clock.getElapsedTime();
 
@@ -175,10 +202,8 @@ const createShaderRipplingSphere = ({ camera }) => {
       // This is separate from the Sphere math because such intersection
       // persists. We need a checker if it still intersects or not.
 
-      this.raycastSphere.center.copy(this.mesh.position);
       this.raycaster.ray.intersectSphere(this.raycastSphere, this.intersectPoint);
       if(this.parameters.debug) {
-        console.log(this.intersectPoint);
         this.debugRaycasterBox.position.copy(this.intersectPoint);
         this.debugRaycasterBox.lookAt(this.raycastSphere.center);
       }
