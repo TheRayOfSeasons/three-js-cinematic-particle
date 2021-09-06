@@ -17,7 +17,7 @@ const createShaderRipplingSphere = ({ camera }) => {
 
       this.mousePosition = new THREE.Vector2();
       this.raycaster = new THREE.Raycaster();
-      this.raycastPlane = new THREE.Plane(new THREE.Vector3(0, 1, 1.5), 0);
+      this.raycastPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -4);
       this.raycastSphere = new THREE.Sphere(new THREE.Vector3(), this.parameters.radius);
       this.intersectPoint = new THREE.Vector3();
       this.group.add(this.easingPosition);
@@ -182,6 +182,8 @@ const createShaderRipplingSphere = ({ camera }) => {
           new THREE.MeshNormalMaterial()
         );
         this.group.add(this.debugRaycasterBox);
+
+        this.group.add(new THREE.PlaneHelper(this.raycastPlane, 0xffff00));
       }
     },
     updateSphereCenter: function() {
@@ -195,7 +197,10 @@ const createShaderRipplingSphere = ({ camera }) => {
       // This is separate from the Sphere math because such intersection
       // persists. We need a checker if it still intersects or not.
 
-      this.raycaster.ray.intersectSphere(this.raycastSphere, this.intersectPoint);
+      const intersectsSphere = this.raycaster.ray.intersectSphere(this.raycastSphere, this.intersectPoint);
+      if(!intersectsSphere) {
+        this.raycaster.ray.intersectPlane(this.raycastPlane, this.intersectPoint);
+      }
       if(this.parameters.debug) {
         this.debugRaycasterBox.position.copy(this.intersectPoint);
         this.debugRaycasterBox.lookAt(this.raycastSphere.center);
