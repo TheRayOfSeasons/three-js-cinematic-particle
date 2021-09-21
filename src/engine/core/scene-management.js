@@ -21,6 +21,8 @@ export class InteractiveScene extends Behaviour {
 
   onSceneAwake() {}
 
+  onSceneStart() {}
+
   onBeforeFrameRender() {}
 
   onAfterRender() {}
@@ -37,6 +39,7 @@ export class InteractiveScene extends Behaviour {
       const group = instance.exportObjectGroup();
       this.scene.add(group);
     });
+    this.onSceneStart();
   }
 
   update(time) {
